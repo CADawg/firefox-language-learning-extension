@@ -1,0 +1,143 @@
+.language-learning-word {
+    background: rgba(70, 130, 180, 0.3);
+    color: white;
+    padding: 2px 4px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    position: relative;
+    text-decoration: none;
+}
+
+.language-learning-word:hover {
+    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.language-learning-tooltip {
+    position: fixed;
+    z-index: 10000;
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    max-width: 300px;
+    line-height: 1.4;
+    backdrop-filter: blur(10px);
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    pointer-events: none;
+}
+
+.language-learning-tooltip.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.language-learning-tooltip::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+}
+
+.language-learning-tooltip.above::before {
+    bottom: -6px;
+    border-top: 6px solid rgba(0, 0, 0, 0.9);
+}
+
+.language-learning-tooltip.below::before {
+    top: -6px;
+    border-bottom: 6px solid rgba(0, 0, 0, 0.9);
+}
+
+.language-learning-tooltip .original-text {
+    font-weight: 600;
+    color: #4CAF50;
+    margin-bottom: 4px;
+}
+
+.language-learning-tooltip .translation {
+    font-size: 12px;
+    opacity: 0.8;
+}
+
+.language-learning-tooltip .difficulty {
+    font-size: 11px;
+    color: #ffd700;
+    margin-top: 6px;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    padding-top: 6px;
+}
+
+.language-learning-progress {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 14px;
+    backdrop-filter: blur(10px);
+    opacity: 0;
+    transform: translateY(-20px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    pointer-events: none;
+    min-width: 200px;
+}
+
+.language-learning-progress.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.language-learning-progress .progress-bar {
+    width: 100%;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 2px;
+    margin-top: 8px;
+    overflow: hidden;
+}
+
+.language-learning-progress .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #4CAF50, #45a049);
+    border-radius: 2px;
+    transition: width 0.5s ease;
+}
+
+.language-learning-disabled {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+@media (max-width: 768px) {
+    .language-learning-tooltip {
+        max-width: 250px;
+        font-size: 13px;
+        padding: 10px 12px;
+    }
+    
+    .language-learning-progress {
+        right: 10px;
+        top: 10px;
+        font-size: 12px;
+        padding: 8px 12px;
+        min-width: 150px;
+    }
+}

@@ -1,0 +1,53 @@
+{
+  "manifest_version": 2,
+  "name": "Language Learning Assistant",
+  "version": "1.0.0",
+  "description": "Learn languages while browsing with DeepL-powered translations. A modern alternative to Toucan for Firefox.",
+  
+  "applications": {
+    "gecko": {
+      "id": "language-learning@conorhow.land",
+      "strict_min_version": "57.0"
+    }
+  },
+  
+  "permissions": [
+    "activeTab",
+    "storage",
+    "https://api-free.deepl.com/*",
+    "https://api.deepl.com/*",
+    "<all_urls>"
+  ],
+  
+  "background": {
+    "scripts": ["background.js"],
+    "persistent": false
+  },
+  
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["deepl-service.js", "content.js"],
+      "css": ["content.css"],
+      "run_at": "document_end"
+    }
+  ],
+  
+  "browser_action": {
+    "default_popup": "popup.html",
+    "default_title": "Language Learning Assistant",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    }
+  },
+  
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  }
+}
