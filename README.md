@@ -97,4 +97,4 @@ This will create `language-learning-assistant-v1.0.0.xpi` ready for installation
 
 ## Credits
 
-Inspired by the original Toucan extension. Built as a modern, Firefox-compatible alternative using DeepL's superior translation quality.
+Inspired by the original Toucan extension. Built as a modern, Firefox-compatible alternative using DeepL translations.
