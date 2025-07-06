@@ -66,9 +66,9 @@ French (default), Spanish, German, Italian, Portuguese, Russian, Japanese, Korea
 
 ## Extension Details
 
-- **ID**: `language-learning@cadawg.com`
+- **ID**: `firefox-language-learning@cadawg.com`
 - **Version**: 1.0.0
-- **Minimum Firefox**: 57.0
+- **Minimum Firefox**: 58.0
 - **Permissions**: Active tab, storage, DeepL API access
 
 ## Privacy
