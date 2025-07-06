@@ -66,7 +66,7 @@ French (default), Spanish, German, Italian, Portuguese, Russian, Japanese, Korea
 
 ## Extension Details
 
-- **ID**: `language-learning@conorhow.land`
+- **ID**: `language-learning@cadawg.com`
 - **Version**: 1.0.0
 - **Minimum Firefox**: 57.0
 - **Permissions**: Active tab, storage, DeepL API access
