@@ -17,17 +17,26 @@ French (default), Spanish, German, Italian, Portuguese, Russian, Japanese, Korea
 
 ## Installation
 
-### Method 1: Permanent Installation (Recommended)
+### Method 1: Signed Version (Recommended)
 
-1. Download the latest `language-learning-assistant-v1.0.0.xpi` file
-2. Open Firefox and navigate to `about:config`
-3. Search for `xpinstall.signatures.required` and set it to `false`
-4. Go to `about:addons`
-5. Click the gear icon (⚙️) and select "Install Add-on From File"
-6. Select the downloaded `.xpi` file
-7. The extension will be permanently installed
+1. Download the latest signed `.xpi` file from the `signed-releases/` folder
+2. Open Firefox and go to `about:addons`
+3. Click the gear icon (⚙️) and select "Install Add-on From File"
+4. Select the downloaded signed `.xpi` file
+5. The extension will be permanently installed
 
-### Method 2: Development Installation
+### Method 2: Unsigned Version (Developer Firefox Required)
+
+1. Download the latest `language-learning-assistant-v1.0.0.xpi` file from the root directory
+2. **Important**: This method requires Firefox Developer Edition, as the `about:config` toggle for `xpinstall.signatures.required` doesn't work in regular Firefox
+3. Open Firefox Developer Edition and navigate to `about:config`
+4. Search for `xpinstall.signatures.required` and set it to `false`
+5. Go to `about:addons`
+6. Click the gear icon (⚙️) and select "Install Add-on From File"
+7. Select the downloaded `.xpi` file
+8. The extension will be permanently installed
+
+### Method 3: Development Installation
 
 1. Open Firefox and go to `about:debugging#/runtime/this-firefox`
 2. Click "Load Temporary Add-on"
