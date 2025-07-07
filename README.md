@@ -19,7 +19,7 @@ French (default), Spanish, German, Italian, Portuguese, Russian, Japanese, Korea
 
 ### Method 1: Signed Version (Recommended)
 
-1. Download the latest signed `.xpi` file from the `signed-releases/` folder
+1. Download the latest signed `.xpi` file from the `builds/signed/` folder
 2. Open Firefox and go to `about:addons`
 3. Click the gear icon (⚙️) and select "Install Add-on From File"
 4. Select the downloaded signed `.xpi` file
@@ -27,7 +27,7 @@ French (default), Spanish, German, Italian, Portuguese, Russian, Japanese, Korea
 
 ### Method 2: Unsigned Version (Developer Firefox Required)
 
-1. Download the latest `language-learning-assistant-v1.0.0.xpi` file from the root directory
+1. Download the latest `.xpi` file from the `builds/unsigned/` directory
 2. **Important**: This method requires Firefox Developer Edition, as the `about:config` toggle for `xpinstall.signatures.required` doesn't work in regular Firefox
 3. Open Firefox Developer Edition and navigate to `about:config`
 4. Search for `xpinstall.signatures.required` and set it to `false`
@@ -67,7 +67,7 @@ French (default), Spanish, German, Italian, Portuguese, Russian, Japanese, Korea
 ## Extension Details
 
 - **ID**: `firefox-language-learning@cadawg.com`
-- **Version**: 1.0.0
+- **Version**: 2.0.0
 - **Minimum Firefox**: 58.0
 - **Permissions**: Active tab, storage, DeepL API access
 
@@ -83,10 +83,23 @@ French (default), Spanish, German, Italian, Portuguese, Russian, Japanese, Korea
 ```bash
 # Clone or download the source code
 chmod +x build.sh
+
+# Build with auto-incrementing patch version (default)
 ./build.sh
+
+# Build with version increment options
+./build.sh --patch   # Increments patch version (2.0.0 → 2.0.1)
+./build.sh --minor   # Increments minor version (2.0.0 → 2.1.0)
+./build.sh --major   # Increments major version (2.0.0 → 3.0.0)
 ```
 
-This will create `language-learning-assistant-v1.0.0.xpi` ready for installation.
+The build script will:
+- Automatically increment the version number in `manifest.json`
+- Create a new `.xpi` file in `builds/unsigned/`
+- Generate icon files from `extensionicon.png`
+- Update the version in the filename (e.g., `language-learning-assistant-v2.0.1.xpi`)
+
+The unsigned build will be saved to `builds/unsigned/` directory.
 
 ## Troubleshooting
 

@@ -156,9 +156,14 @@
         }
         
         .action-buttons {
-            display: flex;
-            gap: 10px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
             margin-top: 10px;
+        }
+        
+        .action-buttons .action-button:last-child {
+            grid-column: 1 / -1;
         }
         
         .action-button {
@@ -233,6 +238,113 @@
             background-color: rgba(244, 67, 54, 0.3);
             color: #F44336;
         }
+        
+        .search-section {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 8px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            box-sizing: border-box;
+            margin-bottom: 10px;
+        }
+        
+        .search-results {
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        
+        .search-result-item {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            padding: 8px;
+            margin-bottom: 5px;
+            font-size: 12px;
+        }
+        
+        .search-result-word {
+            font-weight: 600;
+            color: #4CAF50;
+            margin-bottom: 2px;
+        }
+        
+        .search-result-translation {
+            opacity: 0.8;
+            margin-bottom: 5px;
+        }
+        
+        .search-result-actions {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .search-result-btn {
+            padding: 3px 6px;
+            border: none;
+            border-radius: 3px;
+            font-size: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .edit-btn {
+            background: rgba(33, 150, 243, 0.8);
+            color: white;
+        }
+        
+        .edit-btn:hover {
+            background: rgba(33, 150, 243, 1);
+        }
+        
+        .remove-btn {
+            background: rgba(244, 67, 54, 0.8);
+            color: white;
+        }
+        
+        .remove-btn:hover {
+            background: rgba(244, 67, 54, 1);
+        }
+        
+        .progress-section {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .progress-status {
+            font-size: 12px;
+            margin-bottom: 8px;
+            opacity: 0.9;
+            text-align: center;
+        }
+        
+        .progress-bar-container {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #66BB6A);
+            border-radius: 3px;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
     </style>
 </head>
 <body>
@@ -245,10 +357,23 @@
         <button id="toggleBtn" class="toggle-button disabled">Enable Learning</button>
     </div>
     
+    <div class="progress-section" id="progressSection" style="display: none;">
+        <div class="progress-status" id="progressStatus">Ready</div>
+        <div class="progress-bar-container">
+            <div class="progress-bar-fill" id="progressBarFill"></div>
+        </div>
+    </div>
+    
     <div class="api-key-section">
         <label for="apiKey">DeepL API Key</label>
         <input type="password" id="apiKey" placeholder="Enter your DeepL API key" class="api-key-input">
         <div id="apiKeyStatus" class="api-key-status invalid">API key required</div>
+    </div>
+    
+    <div class="search-section">
+        <label for="searchInput">Search & Correct Translations</label>
+        <input type="text" id="searchInput" placeholder="Search for a word or phrase..." class="search-input">
+        <div id="searchResults" class="search-results"></div>
     </div>
     
     <div class="settings-section">
@@ -302,12 +427,12 @@
         <div class="action-buttons">
             <button class="action-button" id="clearCache">Clear Cache</button>
             <button class="action-button" id="exportData">Export Data</button>
+            <button class="action-button" id="importData">Import Data</button>
         </div>
     </div>
     
     <div id="status"></div>
     
-    <script src="deepl-service.js"></script>
     <script src="popup.js"></script>
 </body>
 </html>
