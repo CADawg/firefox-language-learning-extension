@@ -1,10 +1,11 @@
 class LanguageLearningBackground {
     constructor() {
-        this.deepLService = new DeepLService();
+        this.serverAPI = new ServerAPI();
         this.vocabularyTracker = new VocabularyTracker();
+        this.translationCache = new TranslationCache();
         this.translationQueue = new Map(); // tabId -> processing queue
         this.activeProcessing = new Set(); // Track which tabs are actively processing
-        this.rateLimiter = new BackgroundRateLimiter(50); // DeepL API limit - 50 requests per second
+        this.batchSize = 50; // Maximum words per batch request to server
         
         this.init();
     }
@@ -13,24 +14,72 @@ class LanguageLearningBackground {
         await this.loadSettings();
         this.setupMessageListener();
         this.setupInstallHandler();
+        
+        // Clean up expired cache entries on startup
+        await this.translationCache.cleanupExpiredEntries();
+        
+        // Set up periodic cache cleanup (every 6 hours)
+        this.setupPeriodicCacheCleanup();
+        
         console.log('Language Learning Background Script loaded');
     }
 
+    setupPeriodicCacheCleanup() {
+        // Clean up expired cache entries every 6 hours (6 * 60 * 60 * 1000 ms)
+        const cleanupInterval = 6 * 60 * 60 * 1000;
+        
+        setInterval(async () => {
+            try {
+                await this.translationCache.cleanupExpiredEntries();
+            } catch (error) {
+                console.error('Error during periodic cache cleanup:', error);
+            }
+        }, cleanupInterval);
+        
+        console.log('Periodic cache cleanup scheduled every 6 hours');
+    }
+
     setupInstallHandler() {
-        browser.runtime.onInstalled.addListener(() => {
+        browser.runtime.onInstalled.addListener(async () => {
             console.log('Language Learning Extension installed');
             
-            browser.storage.local.set({
+            // Generate unique GUID for this extension install
+            const extensionGuid = this.generateGUID();
+            
+            await browser.storage.local.set({
                 extensionData: {
                     installDate: new Date().toISOString(),
-                    version: '1.0'
+                    version: '1.0',
+                    extensionGuid: extensionGuid
                 },
                 languageLearningEnabled: false,
                 targetLanguage: 'fr',
                 difficulty: 'beginner',
                 replacementPercentage: 10
             });
+            
+            console.log('Extension GUID generated:', extensionGuid);
         });
+    }
+
+    generateGUID() {
+        // Use crypto.getRandomValues() for cryptographically secure random numbers
+        const array = new Uint8Array(16);
+        crypto.getRandomValues(array);
+        
+        // Set version (4) and variant bits according to RFC 4122
+        array[6] = (array[6] & 0x0f) | 0x40; // Version 4
+        array[8] = (array[8] & 0x3f) | 0x80; // Variant 10
+        
+        // Convert to hex string with proper formatting
+        const hex = Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+        return [
+            hex.slice(0, 8),
+            hex.slice(8, 12),
+            hex.slice(12, 16),
+            hex.slice(16, 20),
+            hex.slice(20, 32)
+        ].join('-');
     }
 
     async loadSettings() {
@@ -38,8 +87,7 @@ class LanguageLearningBackground {
             'languageLearningEnabled',
             'targetLanguage', 
             'difficulty',
-            'replacementPercentage',
-            'deeplApiKey'
+            'replacementPercentage'
         ]);
         
         this.settings = {
@@ -48,10 +96,6 @@ class LanguageLearningBackground {
             difficulty: settings.difficulty || 'beginner',
             replacementPercentage: settings.replacementPercentage || 10
         };
-
-        if (settings.deeplApiKey) {
-            await this.deepLService.setAPIKey(settings.deeplApiKey);
-        }
     }
 
     setupMessageListener() {
@@ -79,25 +123,12 @@ class LanguageLearningBackground {
                         sendResponse({success: true});
                         break;
                         
-                    case 'setApiKey':
+                    case 'checkServerStatus':
                         try {
-                            await this.deepLService.setAPIKey(request.apiKey);
-                            await browser.storage.local.set({deeplApiKey: request.apiKey});
-                            sendResponse({success: true});
+                            const isAvailable = await this.serverAPI.isServerAvailable();
+                            sendResponse({success: true, serverAvailable: isAvailable});
                         } catch (error) {
-                            console.error('Error setting API key:', error);
-                            sendResponse({success: false, error: error.message});
-                        }
-                        break;
-                        
-                    case 'validateApiKey':
-                        try {
-                            await this.deepLService.setAPIKey(request.apiKey);
-                            // Test the API key by getting supported languages
-                            await this.deepLService.getSupportedLanguages();
-                            sendResponse({success: true});
-                        } catch (error) {
-                            console.error('Error validating API key:', error);
+                            console.error('Error checking server status:', error);
                             sendResponse({success: false, error: error.message});
                         }
                         break;
@@ -109,11 +140,15 @@ class LanguageLearningBackground {
                         
                     case 'markTranslationIncorrect':
                         await this.markTranslationIncorrect(request.word, request.translation);
+                        // Also submit feedback to server
+                        await this.serverAPI.submitFeedback(request.word, request.translation, 'incorrect');
                         sendResponse({success: true});
                         break;
                         
                     case 'setCustomTranslation':
-                        await this.setCustomTranslation(request.word, request.translation);
+                        await this.setCustomTranslation(request.word, request.translation, request.originalTranslation);
+                        // Submit custom translation feedback to server
+                        await this.serverAPI.submitFeedback(request.word, request.originalTranslation || 'unknown', 'custom', request.translation);
                         sendResponse({success: true});
                         break;
                         
@@ -167,43 +202,114 @@ class LanguageLearningBackground {
         // Send initial progress
         this.sendProgressToTab(tabId, 'Processing words...', 0, totalWords);
 
-        // Process words in parallel batches to utilize full rate limit
-        const batchSize = Math.min(25, this.rateLimiter.requestsPerSecond || 50); // Process up to 25 at once for better throughput
+        // Get user overrides (blacklist and custom translations)
+        const [blacklistData, vocabularyData] = await Promise.all([
+            browser.storage.local.get('wordBlacklist'),
+            browser.storage.local.get('vocabulary')
+        ]);
         
+        const blacklist = blacklistData.wordBlacklist || [];
+        const vocabulary = vocabularyData.vocabulary || {};
+        
+        // Process words in batches using server API
         while (queue.length > 0) {
-            // Take a batch of words
-            const batch = queue.splice(0, batchSize);
+            // Take a batch of words (up to 50 per request)
+            const batch = queue.splice(0, this.batchSize);
+            const wordsNeedingTranslation = [];
             
-            // Process batch in parallel
-            const batchPromises = batch.map(async (word) => {
+            // Process each word in the batch
+            for (const wordObj of batch) {
+                const wordLower = wordObj.text.toLowerCase();
+                
+                // Check if word is blacklisted
+                if (blacklist.includes(wordLower)) {
+                    processed++;
+                    continue; // Skip blacklisted words entirely
+                }
+                
+                // Check if we have a custom translation
+                if (vocabulary[wordLower] && vocabulary[wordLower].translation) {
+                    // Use existing custom translation
+                    await this.sendTranslationToTab(tabId, {
+                        ...wordObj,
+                        translation: vocabulary[wordLower].translation
+                    });
+                    processed++;
+                    continue;
+                }
+                
+                // Check cache for existing translation (1-day expiry)
+                const cachedTranslation = await this.translationCache.getTranslation(
+                    wordObj.text, 
+                    'auto', 
+                    targetLanguage
+                );
+                
+                if (cachedTranslation) {
+                    // Use cached translation
+                    await this.sendTranslationToTab(tabId, {
+                        ...wordObj,
+                        translation: cachedTranslation
+                    });
+                    
+                    // Also update vocabulary tracker
+                    await this.vocabularyTracker.addWord(wordObj.text, cachedTranslation);
+                    processed++;
+                    continue;
+                }
+                
+                // Word needs server translation
+                wordsNeedingTranslation.push(wordObj);
+            }
+            
+            // Only send words to server that need translation
+            if (wordsNeedingTranslation.length > 0) {
+                const wordTexts = wordsNeedingTranslation.map(word => word.text);
+                
                 try {
-                    // Rate limiting - wait if needed
-                    await this.rateLimiter.waitForSlot();
+                    // Send batch to server for translation
+                    const translations = await this.serverAPI.translateWords(
+                        wordTexts,
+                        'auto', // Auto-detect source language
+                        targetLanguage,
+                        this.settings.difficulty
+                    );
                     
-                    const translation = await this.deepLService.translate(word.text, targetLanguage);
-                    
-                    // Skip if translation is the same as original word
-                    if (translation.text.toLowerCase().trim() !== word.text.toLowerCase().trim()) {
-                        // Send translation result to content script
-                        await this.sendTranslationToTab(tabId, {
-                            ...word,
-                            translation: translation.text
-                        });
+                    // Process each translation result
+                    for (const translation of translations) {
+                        // Find corresponding word object
+                        const wordObj = wordsNeedingTranslation.find(w => w.text === translation.original_word);
+                        if (!wordObj) continue;
                         
-                        // Track vocabulary
-                        await this.vocabularyTracker.addWord(word.text, translation.text);
+                        // Skip if translation is the same as original word
+                        if (translation.translated_word.toLowerCase().trim() !== translation.original_word.toLowerCase().trim()) {
+                            // Cache the translation for 1 day
+                            await this.translationCache.setTranslation(
+                                translation.original_word,
+                                'auto',
+                                targetLanguage,
+                                translation.translated_word
+                            );
+                            
+                            // Send translation result to content script
+                            await this.sendTranslationToTab(tabId, {
+                                ...wordObj,
+                                translation: translation.translated_word
+                            });
+                            
+                            // Track vocabulary locally
+                            await this.vocabularyTracker.addWord(translation.original_word, translation.translated_word);
+                        }
                     }
                     
-                    return true; // Success
+                    processed += wordsNeedingTranslation.length;
+                    
                 } catch (error) {
-                    console.error('Translation error:', error);
-                    return false; // Failed
+                    console.error('Batch translation error:', error);
+                    // Skip this batch and continue
+                    processed += wordsNeedingTranslation.length;
                 }
-            });
-            
-            // Wait for batch to complete
-            await Promise.all(batchPromises);
-            processed += batch.length;
+            }
             
             // Send progress updates
             this.sendProgressToTab(tabId, `Processing words... ${processed}/${totalWords}`, processed, totalWords);
@@ -262,21 +368,14 @@ class LanguageLearningBackground {
     }
 
     async clearCache() {
-        await this.deepLService.clearCache();
         await this.vocabularyTracker.clear();
+        await this.translationCache.clear();
         // Also clear incorrect translations log
         await browser.storage.local.remove(['incorrectTranslations']);
     }
     
     async markTranslationIncorrect(word, translation) {
-        // Remove from cache so it gets retranslated next time
-        const cacheKey = this.deepLService.getCacheKey(word.toLowerCase().trim(), 'auto', this.settings.targetLanguage);
-        this.deepLService.cache.delete(cacheKey);
-        
-        // Save updated cache
-        await this.deepLService.saveCache();
-        
-        // Track as incorrect translation (could be used for user feedback/reports)
+        // Track as incorrect translation locally
         const incorrectTranslations = await browser.storage.local.get('incorrectTranslations');
         const incorrect = incorrectTranslations.incorrectTranslations || [];
         incorrect.push({
@@ -290,19 +389,6 @@ class LanguageLearningBackground {
     }
     
     async setCustomTranslation(word, translation) {
-        // Set custom translation in cache
-        const cacheKey = this.deepLService.getCacheKey(word.toLowerCase().trim(), 'auto', this.settings.targetLanguage);
-        this.deepLService.cache.set(cacheKey, {
-            text: translation,
-            detectedSourceLang: 'auto',
-            confidence: 1.0,
-            timestamp: Date.now(),
-            custom: true // Mark as user-provided
-        });
-        
-        // Save cache
-        await this.deepLService.saveCache();
-        
         // Update vocabulary with custom translation
         await this.vocabularyTracker.addWord(word, translation);
     }
@@ -315,49 +401,9 @@ class LanguageLearningBackground {
             blacklist.push(word.toLowerCase());
             await browser.storage.local.set({ wordBlacklist: blacklist });
         }
-        
-        // Remove from cache
-        const cacheKey = this.deepLService.getCacheKey(word.toLowerCase().trim(), 'auto', this.settings.targetLanguage);
-        this.deepLService.cache.delete(cacheKey);
-        await this.deepLService.saveCache();
     }
 }
 
-class BackgroundRateLimiter {
-    constructor(requestsPerSecond = 5) {
-        this.requestsPerSecond = requestsPerSecond;
-        this.requests = [];
-        this.intervalMs = 1000 / requestsPerSecond; // Time between requests
-        this.lastRequest = 0;
-    }
-
-    async waitForSlot() {
-        const now = Date.now();
-        
-        // Clean up old requests (older than 1 second)
-        this.requests = this.requests.filter(time => now - time < 1000);
-        
-        // If we have space in the current window, use it immediately
-        if (this.requests.length < this.requestsPerSecond) {
-            this.requests.push(now);
-            return;
-        }
-        
-        // We're at the limit - calculate minimal wait time
-        const oldestRequest = Math.min(...this.requests);
-        const timeSinceOldest = now - oldestRequest;
-        const waitTime = Math.max(0, 1000 - timeSinceOldest + 1); // Wait until oldest request is >1000ms old
-        
-        if (waitTime > 0) {
-            await new Promise(resolve => setTimeout(resolve, waitTime));
-        }
-        
-        // Clean up again and record this request
-        const currentTime = Date.now();
-        this.requests = this.requests.filter(time => currentTime - time < 1000);
-        this.requests.push(currentTime);
-    }
-}
 
 class VocabularyTracker {
     constructor() {
@@ -414,6 +460,150 @@ class VocabularyTracker {
         this.vocabulary.clear();
         this.learnedWords.clear();
         await browser.storage.local.remove(['vocabulary', 'learnedWords']);
+    }
+}
+
+class TranslationCache {
+    constructor() {
+        this.CACHE_EXPIRY_DAYS = 1; // 1 day cache expiry
+        this.CACHE_KEY = 'translationCache_v2'; // Versioned cache key
+    }
+
+    // Generate cache key for a translation
+    getCacheKey(originalWord, sourceLanguage, targetLanguage) {
+        return `${originalWord.toLowerCase().trim()}|${sourceLanguage}|${targetLanguage}`;
+    }
+
+    // Get translation from cache if not expired
+    async getTranslation(originalWord, sourceLanguage, targetLanguage) {
+        try {
+            const stored = await browser.storage.local.get(this.CACHE_KEY);
+            const cache = stored[this.CACHE_KEY] || {};
+            
+            const key = this.getCacheKey(originalWord, sourceLanguage, targetLanguage);
+            const entry = cache[key];
+            
+            if (!entry) {
+                return null; // No cached translation
+            }
+            
+            // Check if cache entry has expired (1 day = 24 * 60 * 60 * 1000 ms)
+            const now = Date.now();
+            const expiryTime = entry.timestamp + (this.CACHE_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
+            
+            if (now > expiryTime) {
+                // Cache entry expired, remove it
+                delete cache[key];
+                await browser.storage.local.set({ [this.CACHE_KEY]: cache });
+                return null;
+            }
+            
+            console.log(`Cache hit for "${originalWord}" -> "${entry.translation}"`);
+            return entry.translation;
+            
+        } catch (error) {
+            console.error('Error reading from translation cache:', error);
+            return null;
+        }
+    }
+
+    // Set translation in cache with current timestamp
+    async setTranslation(originalWord, sourceLanguage, targetLanguage, translation) {
+        try {
+            const stored = await browser.storage.local.get(this.CACHE_KEY);
+            const cache = stored[this.CACHE_KEY] || {};
+            
+            const key = this.getCacheKey(originalWord, sourceLanguage, targetLanguage);
+            
+            cache[key] = {
+                translation: translation,
+                timestamp: Date.now(),
+                originalWord: originalWord,
+                sourceLanguage: sourceLanguage,
+                targetLanguage: targetLanguage
+            };
+            
+            await browser.storage.local.set({ [this.CACHE_KEY]: cache });
+            console.log(`Cached translation: "${originalWord}" -> "${translation}"`);
+            
+        } catch (error) {
+            console.error('Error saving to translation cache:', error);
+        }
+    }
+
+    // Clear all cached translations
+    async clear() {
+        try {
+            await browser.storage.local.remove(this.CACHE_KEY);
+            console.log('Translation cache cleared');
+        } catch (error) {
+            console.error('Error clearing translation cache:', error);
+        }
+    }
+
+    // Clean up expired entries (can be called periodically)
+    async cleanupExpiredEntries() {
+        try {
+            const stored = await browser.storage.local.get(this.CACHE_KEY);
+            const cache = stored[this.CACHE_KEY] || {};
+            
+            const now = Date.now();
+            const expiryThreshold = this.CACHE_EXPIRY_DAYS * 24 * 60 * 60 * 1000;
+            let removedCount = 0;
+            
+            // Remove expired entries
+            for (const [key, entry] of Object.entries(cache)) {
+                if (now - entry.timestamp > expiryThreshold) {
+                    delete cache[key];
+                    removedCount++;
+                }
+            }
+            
+            if (removedCount > 0) {
+                await browser.storage.local.set({ [this.CACHE_KEY]: cache });
+                console.log(`Cleaned up ${removedCount} expired cache entries`);
+            }
+            
+        } catch (error) {
+            console.error('Error cleaning up translation cache:', error);
+        }
+    }
+
+    // Get cache statistics
+    async getCacheStats() {
+        try {
+            const stored = await browser.storage.local.get(this.CACHE_KEY);
+            const cache = stored[this.CACHE_KEY] || {};
+            
+            const now = Date.now();
+            const expiryThreshold = this.CACHE_EXPIRY_DAYS * 24 * 60 * 60 * 1000;
+            
+            let totalEntries = 0;
+            let expiredEntries = 0;
+            
+            for (const entry of Object.values(cache)) {
+                totalEntries++;
+                if (now - entry.timestamp > expiryThreshold) {
+                    expiredEntries++;
+                }
+            }
+            
+            return {
+                totalEntries,
+                activeEntries: totalEntries - expiredEntries,
+                expiredEntries,
+                cacheExpiryDays: this.CACHE_EXPIRY_DAYS
+            };
+            
+        } catch (error) {
+            console.error('Error getting cache stats:', error);
+            return {
+                totalEntries: 0,
+                activeEntries: 0,
+                expiredEntries: 0,
+                cacheExpiryDays: this.CACHE_EXPIRY_DAYS
+            };
+        }
     }
 }
 

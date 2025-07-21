@@ -1,0 +1,113 @@
+@import "tailwindcss" prefix(bfiaahej);
+
+@layer utilities {
+  .bfiaahej\:bg-gradient-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  }
+  
+  .bfiaahej\:bg-white\/10 {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  .bfiaahej\:bg-white\/20 {
+    background-color: rgba(255, 255, 255, 0.2);
+  }
+  
+  .bfiaahej\:bg-white\/30 {
+    background-color: rgba(255, 255, 255, 0.3);
+  }
+  
+  .bfiaahej\:bg-white\/90 {
+    background-color: rgba(255, 255, 255, 0.9);
+  }
+  
+  .bfiaahej\:hover\:bg-white\/30:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+  }
+  
+  .bfiaahej\:hover\:bg-white\/20:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+  }
+  
+  .bfiaahej\:backdrop-blur-sm {
+    backdrop-filter: blur(4px);
+  }
+  
+  .bfiaahej\:border-none {
+    border: none;
+  }
+  
+  .ext-bce2400f-text-gradient {
+    background-image: linear-gradient(135deg, #ffffff 0%, #e0e7ff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  /* Toggle button states */
+  .toggle-button {
+    width: 100%;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    margin-bottom: 8px;
+    border: 2px solid transparent;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  
+  .toggle-button.enabled {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    border-color: #047857;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  }
+  
+  .toggle-button.enabled:hover {
+    background: linear-gradient(135deg, #059669, #047857);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+  }
+  
+  .toggle-button.disabled {
+    background: linear-gradient(135deg, #4f46e5, #3730a3);
+    color: white;
+    border-color: #312e81;
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+  }
+  
+  .toggle-button.disabled:hover {
+    background: linear-gradient(135deg, #3730a3, #312e81);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(79, 70, 229, 0.4);
+  }
+  
+  /* Status notification positioning */
+  #status {
+    position: fixed;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    min-width: 200px;
+    max-width: 90%;
+    font-weight: 500;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+  
+  #status.success {
+    background-color: #10b981;
+    color: white;
+    border: 1px solid #059669;
+  }
+  
+  #status.error {
+    background-color: #ef4444;
+    color: white;
+    border: 1px solid #dc2626;
+  }
+}

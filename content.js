@@ -9,11 +9,154 @@ class LanguageLearningContent {
         this.pendingReplacements = new Map(); // Store nodes waiting for translations
         this.isTooltipHovered = false; // Track tooltip hover state
         this.hideTooltipTimeout = null; // Track hide timeout
+        this.dictionary = new EnglishDictionary(); // English word dictionary for filtering
         
         this.init();
     }
 
+    // Custom Modal System for Content Script
+    createModal() {
+        if (document.getElementById('fluent-tab-modal')) return;
+        
+        const modal = document.createElement('div');
+        modal.id = 'fluent-tab-modal';
+        modal.className = 'fluent-modal-fixed fluent-modal-inset-0 fluent-modal-bg-black/50 fluent-modal-flex fluent-modal-items-center fluent-modal-justify-center fluent-modal-z-50 fluent-modal-hidden fluent-modal-font-sans';
+        
+        const modalContent = document.createElement('div');
+        modalContent.className = 'fluent-modal-bg-white fluent-modal-rounded-lg fluent-modal-p-6 fluent-modal-w-80 fluent-modal-max-w-sm fluent-modal-mx-4 fluent-modal-shadow-lg';
+        
+        const modalTitle = document.createElement('div');
+        modalTitle.id = 'fluent-tab-modal-title';
+        modalTitle.className = 'fluent-modal-text-lg fluent-modal-font-semibold fluent-modal-text-gray-800 fluent-modal-mb-3';
+        
+        const modalMessage = document.createElement('div');
+        modalMessage.id = 'fluent-tab-modal-message';
+        modalMessage.className = 'fluent-modal-text-gray-600 fluent-modal-mb-4 fluent-modal-whitespace-pre-line';
+        
+        const modalInput = document.createElement('div');
+        modalInput.id = 'fluent-tab-modal-input';
+        modalInput.className = 'fluent-modal-mb-4 fluent-modal-hidden';
+        
+        const inputField = document.createElement('input');
+        inputField.id = 'fluent-tab-modal-input-field';
+        inputField.type = 'text';
+        inputField.className = 'fluent-modal-w-full fluent-modal-py-2 fluent-modal-px-3 fluent-modal-border fluent-modal-border-gray-300 fluent-modal-rounded fluent-modal-text-sm fluent-modal-focus:outline-none fluent-modal-focus:ring-2 fluent-modal-focus:ring-blue-500';
+        
+        const modalButtons = document.createElement('div');
+        modalButtons.className = 'fluent-modal-flex fluent-modal-justify-end fluent-modal-space-x-2';
+        
+        const cancelBtn = document.createElement('button');
+        cancelBtn.id = 'fluent-tab-modal-cancel';
+        cancelBtn.textContent = 'Cancel';
+        cancelBtn.className = 'fluent-modal-px-4 fluent-modal-py-2 fluent-modal-text-gray-600 fluent-modal-bg-gray-100 fluent-modal-rounded fluent-modal-text-sm fluent-modal-hover:bg-gray-200 fluent-modal-transition-colors';
+        
+        const confirmBtn = document.createElement('button');
+        confirmBtn.id = 'fluent-tab-modal-confirm';
+        confirmBtn.textContent = 'OK';
+        confirmBtn.className = 'fluent-modal-px-4 fluent-modal-py-2 fluent-modal-bg-blue-500 fluent-modal-text-white fluent-modal-rounded fluent-modal-text-sm fluent-modal-hover:bg-blue-600 fluent-modal-transition-colors';
+        
+        modalInput.appendChild(inputField);
+        modalButtons.appendChild(cancelBtn);
+        modalButtons.appendChild(confirmBtn);
+        modalContent.appendChild(modalTitle);
+        modalContent.appendChild(modalMessage);
+        modalContent.appendChild(modalInput);
+        modalContent.appendChild(modalButtons);
+        modal.appendChild(modalContent);
+        
+        document.body.appendChild(modal);
+    }
+
+    showModal(title, message, type = 'alert', defaultValue = '') {
+        return new Promise((resolve) => {
+            this.createModal();
+            
+            const modal = document.getElementById('fluent-tab-modal');
+            const modalTitle = document.getElementById('fluent-tab-modal-title');
+            const modalMessage = document.getElementById('fluent-tab-modal-message');
+            const modalInput = document.getElementById('fluent-tab-modal-input');
+            const inputField = document.getElementById('fluent-tab-modal-input-field');
+            const cancelBtn = document.getElementById('fluent-tab-modal-cancel');
+            const confirmBtn = document.getElementById('fluent-tab-modal-confirm');
+            
+            modalTitle.textContent = title;
+            modalMessage.textContent = message;
+            
+            if (type === 'prompt') {
+                modalInput.classList.remove('fluent-modal-hidden');
+                inputField.value = defaultValue;
+                cancelBtn.classList.remove('fluent-modal-hidden');
+                setTimeout(() => inputField.focus(), 100);
+            } else {
+                modalInput.classList.add('fluent-modal-hidden');
+                if (type === 'alert') {
+                    cancelBtn.classList.add('fluent-modal-hidden');
+                } else {
+                    cancelBtn.classList.remove('fluent-modal-hidden');
+                }
+            }
+            
+            modal.classList.remove('fluent-modal-hidden');
+            
+            const handleConfirm = () => {
+                const result = type === 'prompt' ? inputField.value : true;
+                cleanup();
+                resolve(result);
+            };
+            
+            const handleCancel = () => {
+                cleanup();
+                resolve(type === 'prompt' ? null : false);
+            };
+            
+            const cleanup = () => {
+                modal.classList.add('fluent-modal-hidden');
+                confirmBtn.removeEventListener('click', handleConfirm);
+                cancelBtn.removeEventListener('click', handleCancel);
+                modal.removeEventListener('click', handleBackdropClick);
+                document.removeEventListener('keydown', handleKeyDown);
+            };
+            
+            const handleBackdropClick = (e) => {
+                if (e.target === modal) {
+                    handleCancel();
+                }
+            };
+            
+            const handleKeyDown = (e) => {
+                if (e.key === 'Enter') {
+                    handleConfirm();
+                } else if (e.key === 'Escape') {
+                    handleCancel();
+                }
+            };
+            
+            confirmBtn.addEventListener('click', handleConfirm);
+            cancelBtn.addEventListener('click', handleCancel);
+            modal.addEventListener('click', handleBackdropClick);
+            document.addEventListener('keydown', handleKeyDown);
+        });
+    }
+    
+    customAlert(message, title = 'Notice') {
+        return this.showModal(title, message, 'alert');
+    }
+    
+    customConfirm(message, title = 'Confirm') {
+        return this.showModal(title, message, 'confirm');
+    }
+    
+    customPrompt(message, title = 'Input', defaultValue = '') {
+        return this.showModal(title, message, 'prompt', defaultValue);
+    }
+
     async init() {
+        // Check if extension is disabled via meta tag
+        if (this.isExtensionDisabled()) {
+            console.log('Fluent Tab disabled by meta tag');
+            return;
+        }
+        
         await this.loadSettings();
         this.createTooltip();
         
@@ -22,6 +165,12 @@ class LanguageLearningContent {
         }
         
         this.setupMessageListener();
+    }
+
+    isExtensionDisabled() {
+        // Check for meta tag that disables the extension
+        const disableMeta = document.querySelector('meta[name="fluent-tab"][content="disabled"]');
+        return disableMeta !== null;
     }
 
     async loadSettings() {
@@ -99,7 +248,7 @@ class LanguageLearningContent {
         });
         
         // Send words to background for processing
-        const wordsData = wordsToProcess.map(({ word, index }, i) => ({
+        const wordsData = wordsToProcess.map(({ word, index }) => ({
             text: word,
             index: index,
             id: `${word.toLowerCase()}_${Date.now()}_${Math.random()}`
@@ -216,19 +365,24 @@ class LanguageLearningContent {
     
     shouldReplacePhrase(phrase) {
         if (phrase.length < 5 || phrase.length > 30) return false;
-        if (this.processedWords.has(phrase.toLowerCase())) return false;
-        return true;
+        return !this.processedWords.has(phrase.toLowerCase());
     }
     
     async shouldReplaceWord(word) {
         if (word.length < 3 || word.length > 20) return false; // Increased length limit for contractions
         if (this.processedWords.has(word.toLowerCase())) return false;
         
+        // Check if word exists in English dictionary
+        if (!this.dictionary.isValidWord(word)) {
+            return false; // Filter out words not in dictionary
+        }
+        
         // Check blacklist
         const stored = await browser.storage.local.get('wordBlacklist');
         const blacklist = stored.wordBlacklist || [];
         if (blacklist.includes(word.toLowerCase())) return false;
         
+        // Skip very common words that shouldn't be translated for learning
         const commonWords = {
             beginner: ['the', 'and', 'you', 'are', 'have', 'this', 'that', 'with', 'they', 'from', "don't", "won't", "can't", "it's", "i'm", "you're", "they're", "we're"],
             intermediate: ['because', 'through', 'during', 'before', 'after', 'above', 'below', 'between', "couldn't", "wouldn't", "shouldn't", "haven't", "hasn't", "hadn't"],
@@ -278,8 +432,7 @@ class LanguageLearningContent {
         translatedSpan.className = `language-learning-word ${this.difficulty}`;
         
         // Apply capitalization matching
-        const capitalizedTranslation = this.matchCapitalization(originalWord, translation.text);
-        translatedSpan.textContent = capitalizedTranslation;
+        translatedSpan.textContent = this.matchCapitalization(originalWord, translation.text);
         translatedSpan.setAttribute('data-original', originalWord);
         translatedSpan.setAttribute('data-translation', translation.text);
         translatedSpan.setAttribute('data-difficulty', this.difficulty);
@@ -300,7 +453,6 @@ class LanguageLearningContent {
             }
         } catch (error) {
             // Silently handle DOM manipulation errors
-            return;
         }
     }
 
@@ -356,16 +508,57 @@ class LanguageLearningContent {
     showTooltip(event, originalWord, translation, pinned = false) {
         const rect = event.target.getBoundingClientRect();
         
-        this.tooltip.innerHTML = `
-            <div class="original-text">${originalWord}</div>
-            <div class="translation">${translation}</div>
-            <div class="difficulty">Difficulty: ${this.difficulty.charAt(0).toUpperCase() + this.difficulty.slice(1)}</div>
-            <div class="tooltip-actions">
-                <button class="tooltip-btn learned-btn" data-action="learned" data-word="${originalWord}">✓ Learned</button>
-                <button class="tooltip-btn incorrect-btn" data-action="incorrect" data-word="${originalWord}" data-translation="${translation}">✗ Incorrect</button>
-            </div>
-            ${pinned ? '<div class="tooltip-hint">Click outside to close</div>' : ''}
-        `;
+        // Clear tooltip content
+        this.tooltip.textContent = '';
+        
+        // Create original text element
+        const originalTextDiv = document.createElement('div');
+        originalTextDiv.className = 'original-text';
+        originalTextDiv.textContent = originalWord;
+        this.tooltip.appendChild(originalTextDiv);
+        
+        // Create translation element
+        const translationDiv = document.createElement('div');
+        translationDiv.className = 'translation';
+        translationDiv.textContent = translation;
+        this.tooltip.appendChild(translationDiv);
+        
+        // Create difficulty element
+        const difficultyDiv = document.createElement('div');
+        difficultyDiv.className = 'difficulty';
+        difficultyDiv.textContent = `Difficulty: ${this.difficulty.charAt(0).toUpperCase() + this.difficulty.slice(1)}`;
+        this.tooltip.appendChild(difficultyDiv);
+        
+        // Create actions container
+        const actionsDiv = document.createElement('div');
+        actionsDiv.className = 'tooltip-actions';
+        
+        // Create learned button
+        const learnedBtn = document.createElement('button');
+        learnedBtn.className = 'tooltip-btn learned-btn';
+        learnedBtn.textContent = '✓ Learned';
+        learnedBtn.setAttribute('data-action', 'learned');
+        learnedBtn.setAttribute('data-word', originalWord);
+        actionsDiv.appendChild(learnedBtn);
+        
+        // Create incorrect button
+        const incorrectBtn = document.createElement('button');
+        incorrectBtn.className = 'tooltip-btn incorrect-btn';
+        incorrectBtn.textContent = '✗ Incorrect';
+        incorrectBtn.setAttribute('data-action', 'incorrect');
+        incorrectBtn.setAttribute('data-word', originalWord);
+        incorrectBtn.setAttribute('data-translation', translation);
+        actionsDiv.appendChild(incorrectBtn);
+        
+        this.tooltip.appendChild(actionsDiv);
+        
+        // Add hint if pinned
+        if (pinned) {
+            const hintDiv = document.createElement('div');
+            hintDiv.className = 'tooltip-hint';
+            hintDiv.textContent = 'Click outside to close';
+            this.tooltip.appendChild(hintDiv);
+        }
         
         // Add event listeners to the buttons
         this.tooltip.querySelectorAll('.tooltip-btn').forEach(btn => {
@@ -417,8 +610,8 @@ class LanguageLearningContent {
         
         const tooltipRect = this.tooltip.getBoundingClientRect();
         const viewportWidth = window.innerWidth;
-        const viewportHeight = window.innerHeight;
-        
+        // const viewportHeight = window.innerHeight;
+
         // Calculate horizontal position
         let left = rect.left + rect.width / 2 - tooltipRect.width / 2;
         
@@ -547,7 +740,7 @@ class LanguageLearningContent {
             "Just mark as incorrect"
         ];
         
-        const choice = this.showCustomDialog(
+        const choice = await this.showCustomDialog(
             `"${word}" → "${translation}"\n\nWhat would you like to do?`,
             options
         );
@@ -557,9 +750,9 @@ class LanguageLearningContent {
             await this.blacklistWord(word);
         } else if (choice === 2) {
             // Provide correct translation
-            const correctTranslation = prompt(`What should "${word}" translate to?`);
+            const correctTranslation = await this.customPrompt(`What should "${word}" translate to?`, 'Correct Translation');
             if (correctTranslation && correctTranslation.trim()) {
-                await this.setCustomTranslation(word, correctTranslation.trim());
+                await this.setCustomTranslation(word, correctTranslation.trim(), translation);
             }
         } else if (choice === 3) {
             // Just mark as incorrect
@@ -569,16 +762,64 @@ class LanguageLearningContent {
     }
     
     showCustomDialog(message, options) {
-        // Simple implementation using confirm/prompt for now
-        // Could be enhanced with a custom modal later
-        const choice = prompt(
-            message + "\n\n" +
-            options.map((opt, i) => `${i}: ${opt}`).join("\n") +
-            "\n\nEnter your choice (0-" + (options.length - 1) + "):"
-        );
-        
-        const choiceNum = parseInt(choice);
-        return (choiceNum >= 0 && choiceNum < options.length) ? choiceNum : 0;
+        return new Promise((resolve) => {
+            this.createModal();
+            
+            const modal = document.getElementById('fluent-tab-modal');
+            const modalTitle = document.getElementById('fluent-tab-modal-title');
+            const modalMessage = document.getElementById('fluent-tab-modal-message');
+            const modalInput = document.getElementById('fluent-tab-modal-input');
+            const modalButtons = modal.querySelector('.fluent-modal-flex.fluent-modal-justify-end');
+            
+            modalTitle.textContent = 'Choose Action';
+            modalMessage.textContent = message;
+            modalInput.classList.add('fluent-modal-hidden');
+            
+            // Clear existing buttons and create choice buttons
+            modalButtons.textContent = '';
+            
+            options.forEach((option, index) => {
+                const btn = document.createElement('button');
+                btn.textContent = option;
+                btn.className = `fluent-modal-px-3 fluent-modal-py-2 fluent-modal-text-sm fluent-modal-rounded fluent-modal-transition-colors fluent-modal-mr-2 ${
+                    index === 0 ? 'fluent-modal-bg-gray-100 fluent-modal-text-gray-600 fluent-modal-hover:bg-gray-200' :
+                    index === 1 ? 'fluent-modal-bg-red-500 fluent-modal-text-white fluent-modal-hover:bg-red-600' :
+                    'fluent-modal-bg-blue-500 fluent-modal-text-white fluent-modal-hover:bg-blue-600'
+                }`;
+                
+                btn.addEventListener('click', () => {
+                    cleanup();
+                    resolve(index);
+                });
+                
+                modalButtons.appendChild(btn);
+            });
+            
+            modal.classList.remove('fluent-modal-hidden');
+            
+            const cleanup = () => {
+                modal.classList.add('fluent-modal-hidden');
+                modal.removeEventListener('click', handleBackdropClick);
+                document.removeEventListener('keydown', handleKeyDown);
+            };
+            
+            const handleBackdropClick = (e) => {
+                if (e.target === modal) {
+                    cleanup();
+                    resolve(0); // Return cancel
+                }
+            };
+            
+            const handleKeyDown = (e) => {
+                if (e.key === 'Escape') {
+                    cleanup();
+                    resolve(0); // Return cancel
+                }
+            };
+            
+            modal.addEventListener('click', handleBackdropClick);
+            document.addEventListener('keydown', handleKeyDown);
+        });
     }
     
     async markTranslationIncorrect(word, translation) {
@@ -593,12 +834,13 @@ class LanguageLearningContent {
         }
     }
     
-    async setCustomTranslation(word, translation) {
+    async setCustomTranslation(word, translation, originalTranslation) {
         try {
             await browser.runtime.sendMessage({
                 action: 'setCustomTranslation',
                 word: word,
-                translation: translation
+                translation: translation,
+                originalTranslation: originalTranslation
             });
         } catch (error) {
             console.error('Error setting custom translation:', error);

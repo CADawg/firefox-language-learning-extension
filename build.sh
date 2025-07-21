@@ -9,6 +9,7 @@ OUTPUT_DIR="builds/unsigned"
 
 # Parse command line arguments
 BUMP_TYPE="patch"
+DEV_MODE=false
 while [[ $# -gt 0 ]]; do
     case $1 in
         --major)
@@ -23,9 +24,21 @@ while [[ $# -gt 0 ]]; do
             BUMP_TYPE="patch"
             shift
             ;;
+        --none)
+            BUMP_TYPE="none"
+            shift
+            ;;
+        --dev)
+            DEV_MODE=true
+            shift
+            ;;
+        --prod)
+            DEV_MODE=false
+            shift
+            ;;
         *)
             echo "Unknown option: $1"
-            echo "Usage: $0 [--major|--minor|--patch]"
+            echo "Usage: $0 [--major|--minor|--patch|--none] [--dev|--prod]"
             exit 1
             ;;
     esac
@@ -58,15 +71,23 @@ increment_version() {
 
 # Get current version from manifest.json
 CURRENT_VERSION=$(grep -o '"version": "[^"]*"' manifest.json | cut -d'"' -f4)
-NEW_VERSION=$(increment_version "$CURRENT_VERSION" "$BUMP_TYPE")
 
-# Update manifest.json with new version
-sed -i "s/\"version\": \"$CURRENT_VERSION\"/\"version\": \"$NEW_VERSION\"/" manifest.json
-
-ZIP_FILE="${EXTENSION_NAME}-v${NEW_VERSION}.xpi"
-
-echo "Building Firefox extension..."
-echo "🔢 Version: $CURRENT_VERSION → $NEW_VERSION ($BUMP_TYPE)"
+if [ "$BUMP_TYPE" = "none" ]; then
+    NEW_VERSION="$CURRENT_VERSION"
+    ZIP_FILE="${EXTENSION_NAME}-v${NEW_VERSION}.xpi"
+    echo "Building Firefox extension..."
+    echo "🔢 Version: $CURRENT_VERSION (no version bump)"
+else
+    NEW_VERSION=$(increment_version "$CURRENT_VERSION" "$BUMP_TYPE")
+    
+    # Update manifest.json with new version
+    sed -i "s/\"version\": \"$CURRENT_VERSION\"/\"version\": \"$NEW_VERSION\"/" manifest.json
+    
+    ZIP_FILE="${EXTENSION_NAME}-v${NEW_VERSION}.xpi"
+    echo "Building Firefox extension..."
+    echo "🔢 Version: $CURRENT_VERSION → $NEW_VERSION ($BUMP_TYPE)"
+fi
+echo "🌍 Environment: $(if [ "$DEV_MODE" = true ]; then echo "Development (localhost:8090)"; else echo "Production (fluent-tab.dbuidl.com)"; fi)"
 
 # Create build and output directories if they don't exist
 mkdir -p "$BUILD_DIR"
@@ -78,15 +99,34 @@ if [ -f "$OUTPUT_DIR/$ZIP_FILE" ]; then
     echo "Removed old zip file: $OUTPUT_DIR/$ZIP_FILE"
 fi
 
-# Copy extension files to build directory
-echo "Copying extension files..."
-cp manifest.json "$BUILD_DIR/"
+# Copy and modify manifest.json based on environment
+echo "Configuring manifest for environment..."
+if [ "$DEV_MODE" = true ]; then
+    # Dev build: keep localhost permission
+    cp manifest.json "$BUILD_DIR/"
+else
+    # Prod build: remove localhost permission using sed
+    sed '/http:\/\/localhost:8090\/\*/d' manifest.json > "$BUILD_DIR/manifest.json"
+fi
 cp popup.html "$BUILD_DIR/"
 cp popup.js "$BUILD_DIR/"
 cp background.js "$BUILD_DIR/"
+cp english-dictionary.js "$BUILD_DIR/"
 cp content.js "$BUILD_DIR/"
 cp content.css "$BUILD_DIR/"
-cp deepl-service.js "$BUILD_DIR/"
+cp popup.css "$BUILD_DIR/"
+
+# Copy server-api.js and inject DEV_MODE flag
+echo "Configuring server API for environment..."
+if [ "$DEV_MODE" = true ]; then
+    # Inject DEV_MODE = true at the top of server-api.js
+    echo "const DEV_MODE = true;" > "$BUILD_DIR/server-api.js"
+    cat server-api.js >> "$BUILD_DIR/server-api.js"
+else
+    # Inject DEV_MODE = false at the top of server-api.js  
+    echo "const DEV_MODE = false;" > "$BUILD_DIR/server-api.js"
+    cat server-api.js >> "$BUILD_DIR/server-api.js"
+fi
 
 # Create icons directory in build folder
 mkdir -p "$BUILD_DIR/icons"

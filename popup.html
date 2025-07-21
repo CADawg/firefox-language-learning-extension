@@ -2,266 +2,133 @@
 <html>
 <head>
     <meta charset="utf-8">
+    <link rel="stylesheet" href="popup.css">
     <style>
-        body {
-            width: 350px;
-            padding: 20px;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            margin: 0;
-        }
+        body { width: 350px; margin: 0; }
+    </style>
+</head>
+<body class="bfiaahej:bg-gradient-primary dark:bfiaahej:bg-gray-900 bfiaahej:text-white bfiaahej:font-sans bfiaahej:transition-colors bfiaahej:duration-300">
+    <div class="bfiaahej:p-5">
+        <div class="bfiaahej:text-center bfiaahej:mb-5 bfiaahej:relative">
+            <!-- Theme Toggle -->
+            <div class="bfiaahej:absolute bfiaahej:top-0 bfiaahej:right-0">
+                <button id="themeToggle" class="bfiaahej:p-1 bfiaahej:bg-white/10 hover:bfiaahej:bg-white/20 bfiaahej:rounded bfiaahej:transition-all bfiaahej:duration-300">
+                    <svg id="sunIcon" class="bfiaahej:w-4 bfiaahej:h-4 bfiaahej:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                    </svg>
+                    <svg id="moonIcon" class="bfiaahej:w-4 bfiaahej:h-4 bfiaahej:text-white bfiaahej:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+                    </svg>
+                </button>
+            </div>
+            <h1 class="bfiaahej:text-xl bfiaahej:font-semibold bfiaahej:mb-1">Language Learning</h1>
+            <div class="bfiaahej:text-xs bfiaahej:opacity-80 bfiaahej:mb-5">Learn while you browse</div>
+        </div>
         
-        .header {
-            text-align: center;
-            margin-bottom: 20px;
-        }
+        <div class="bfiaahej:bg-white/10 bfiaahej:backdrop-blur-sm bfiaahej:rounded-lg bfiaahej:p-4 bfiaahej:mb-4">
+            <button id="toggleBtn" class="bfiaahej:w-full bfiaahej:py-3 bfiaahej:rounded-md bfiaahej:text-sm bfiaahej:font-medium bfiaahej:transition-all bfiaahej:duration-300 bfiaahej:mb-2 bfiaahej:bg-white/20 bfiaahej:text-white">Enable Learning</button>
+        </div>
         
-        h1 {
-            font-size: 20px;
-            margin: 0 0 5px 0;
-            font-weight: 600;
-        }
+        <div id="progressSection" class="bfiaahej:bg-white/10 bfiaahej:backdrop-blur-sm bfiaahej:rounded-lg bfiaahej:p-4 bfiaahej:mb-4 bfiaahej:hidden">
+            <div id="progressStatus" class="bfiaahej:text-xs bfiaahej:mb-2 bfiaahej:text-center bfiaahej:opacity-90">Ready</div>
+            <div class="bfiaahej:w-full bfiaahej:h-1.5 bfiaahej:bg-white/20 bfiaahej:rounded-full bfiaahej:overflow-hidden">
+                <div id="progressBarFill" class="bfiaahej:h-full bfiaahej:bg-gradient-to-r bfiaahej:from-green-400 bfiaahej:to-green-500 bfiaahej:rounded-full bfiaahej:w-0 bfiaahej:transition-all bfiaahej:duration-300"></div>
+            </div>
+        </div>
         
-        .subtitle {
-            font-size: 12px;
-            opacity: 0.8;
-            margin-bottom: 20px;
-        }
+        <div class="bfiaahej:bg-white/10 bfiaahej:backdrop-blur-sm bfiaahej:rounded-lg bfiaahej:p-4 bfiaahej:mb-4">
+            <label for="searchInput" class="bfiaahej:block bfiaahej:text-xs bfiaahej:font-medium bfiaahej:mb-1 bfiaahej:opacity-90">Search & Correct Translations</label>
+            <input type="text" id="searchInput" placeholder="Search for a word or phrase..." class="bfiaahej:w-full bfiaahej:py-2 bfiaahej:px-3 bfiaahej:rounded bfiaahej:border-none bfiaahej:text-sm bfiaahej:bg-white/90 bfiaahej:text-gray-800 bfiaahej:mb-2">
+            <div id="searchResults" class="bfiaahej:max-h-36 bfiaahej:overflow-y-auto"></div>
+        </div>
         
-        .toggle-section {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 15px;
-            backdrop-filter: blur(10px);
-        }
+        <div class="bfiaahej:bg-white/10 bfiaahej:backdrop-blur-sm bfiaahej:rounded-lg bfiaahej:p-4 bfiaahej:mb-4">
+            <div class="bfiaahej:mb-4">
+                <label for="targetLanguage" class="bfiaahej:block bfiaahej:text-xs bfiaahej:font-medium bfiaahej:mb-1 bfiaahej:opacity-90">Target Language</label>
+                <select id="targetLanguage" class="bfiaahej:w-full bfiaahej:py-2 bfiaahej:px-3 bfiaahej:rounded bfiaahej:border-none bfiaahej:text-sm bfiaahej:bg-white/90 bfiaahej:text-gray-800">
+                    <option value="fr">French</option>
+                    <option value="es">Spanish</option>
+                    <option value="de">German</option>
+                    <option value="it">Italian</option>
+                    <option value="pt">Portuguese</option>
+                    <option value="ru">Russian</option>
+                    <option value="ja">Japanese</option>
+                    <option value="ko">Korean</option>
+                    <option value="zh">Chinese</option>
+                    <option value="nl">Dutch</option>
+                    <option value="pl">Polish</option>
+                </select>
+            </div>
+            
+            <div class="bfiaahej:mb-4">
+                <label for="difficulty" class="bfiaahej:block bfiaahej:text-xs bfiaahej:font-medium bfiaahej:mb-1 bfiaahej:opacity-90">Difficulty Level</label>
+                <select id="difficulty" class="bfiaahej:w-full bfiaahej:py-2 bfiaahej:px-3 bfiaahej:rounded bfiaahej:border-none bfiaahej:text-sm bfiaahej:bg-white/90 bfiaahej:text-gray-800">
+                    <option value="beginner">Beginner</option>
+                    <option value="intermediate">Intermediate</option>
+                    <option value="advanced">Advanced</option>
+                </select>
+            </div>
+            
+            <div class="bfiaahej:mb-0">
+                <label for="replacementPercentage" class="bfiaahej:block bfiaahej:text-xs bfiaahej:font-medium bfiaahej:mb-1 bfiaahej:opacity-90">Word Replacement</label>
+                <div class="bfiaahej:relative bfiaahej:mt-1">
+                    <span id="percentageValue" class="bfiaahej:absolute bfiaahej:right-0 bfiaahej:-top-5 bfiaahej:text-xs bfiaahej:opacity-80">10%</span>
+                    <input type="range" id="replacementPercentage" min="1" max="30" value="10" class="bfiaahej:w-full bfiaahej:h-1 bfiaahej:bg-white/30 bfiaahej:rounded-lg bfiaahej:appearance-none bfiaahej:cursor-pointer slider">
+                </div>
+            </div>
+        </div>
         
-        .toggle-button {
-            width: 100%;
-            padding: 12px;
-            border: none;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-bottom: 10px;
-        }
+        <div class="bfiaahej:bg-white/10 bfiaahej:backdrop-blur-sm bfiaahej:rounded-lg bfiaahej:p-4">
+            <div class="bfiaahej:grid bfiaahej:grid-cols-2 bfiaahej:gap-2 bfiaahej:mb-2">
+                <div class="bfiaahej:text-center bfiaahej:py-2 bfiaahej:bg-white/10 bfiaahej:rounded">
+                    <div id="wordsLearned" class="bfiaahej:text-lg bfiaahej:font-semibold bfiaahej:mb-0.5">0</div>
+                    <div class="bfiaahej:text-xs bfiaahej:opacity-80">Words Learned</div>
+                </div>
+                <div class="bfiaahej:text-center bfiaahej:py-2 bfiaahej:bg-white/10 bfiaahej:rounded">
+                    <div id="vocabularySize" class="bfiaahej:text-lg bfiaahej:font-semibold bfiaahej:mb-0.5">0</div>
+                    <div class="bfiaahej:text-xs bfiaahej:opacity-80">Vocabulary</div>
+                </div>
+            </div>
+            
+            <div class="bfiaahej:grid bfiaahej:grid-cols-2 bfiaahej:gap-2 bfiaahej:mt-2">
+                <button id="clearCache" class="bfiaahej:py-2 bfiaahej:px-3 bfiaahej:bg-white/20 bfiaahej:text-white bfiaahej:rounded bfiaahej:text-xs bfiaahej:transition-all bfiaahej:duration-300 hover:bfiaahej:bg-white/30">Clear Cache</button>
+                <button id="exportData" class="bfiaahej:py-2 bfiaahej:px-3 bfiaahej:bg-white/20 bfiaahej:text-white bfiaahej:rounded bfiaahej:text-xs bfiaahej:transition-all bfiaahej:duration-300 hover:bfiaahej:bg-white/30">Export Data</button>
+                <button id="importData" class="bfiaahej:col-span-2 bfiaahej:py-2 bfiaahej:px-3 bfiaahej:bg-white/20 bfiaahej:text-white bfiaahej:rounded bfiaahej:text-xs bfiaahej:transition-all bfiaahej:duration-300 hover:bfiaahej:bg-white/30">Import Data</button>
+            </div>
+        </div>
         
-        .toggle-button.enabled {
-            background: #4CAF50;
-            color: white;
-        }
-        
-        .toggle-button.disabled {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-        }
-        
-        .settings-section {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 15px;
-            backdrop-filter: blur(10px);
-        }
-        
-        .setting-group {
-            margin-bottom: 15px;
-        }
-        
-        .setting-group:last-child {
-            margin-bottom: 0;
-        }
-        
-        label {
-            display: block;
-            font-size: 12px;
-            font-weight: 500;
-            margin-bottom: 5px;
-            opacity: 0.9;
-        }
-        
-        select, input {
-            width: 100%;
-            padding: 8px;
-            border: none;
-            border-radius: 4px;
-            font-size: 14px;
-            background: rgba(255, 255, 255, 0.9);
-            color: #333;
-            box-sizing: border-box;
-        }
-        
-        .api-key-section {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 15px;
-            backdrop-filter: blur(10px);
-        }
-        
-        .api-key-input {
-            margin-bottom: 10px;
-        }
-        
-        .api-key-status {
-            font-size: 12px;
-            padding: 8px;
-            border-radius: 4px;
-            text-align: center;
-        }
-        
-        .api-key-status.valid {
-            background: rgba(76, 175, 80, 0.3);
-            color: #4CAF50;
-        }
-        
-        .api-key-status.invalid {
-            background: rgba(244, 67, 54, 0.3);
-            color: #F44336;
-        }
-        
-        .stats-section {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            padding: 15px;
-            backdrop-filter: blur(10px);
-        }
-        
-        .stats-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-        
-        .stat-item {
-            text-align: center;
-            padding: 10px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 4px;
-        }
-        
-        .stat-value {
-            font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 2px;
-        }
-        
-        .stat-label {
-            font-size: 11px;
-            opacity: 0.8;
-        }
-        
-        .action-buttons {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-            margin-top: 10px;
-        }
-        
-        .action-buttons .action-button:last-child {
-            grid-column: 1 / -1;
-        }
-        
-        .action-button {
-            flex: 1;
-            padding: 8px;
-            border: none;
-            border-radius: 4px;
-            font-size: 12px;
-            cursor: pointer;
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            transition: all 0.3s ease;
-        }
-        
-        .action-button:hover {
-            background: rgba(255, 255, 255, 0.3);
-        }
-        
-        .range-container {
-            position: relative;
-            margin-top: 5px;
-        }
-        
-        .range-value {
-            position: absolute;
-            right: 0;
-            top: -20px;
-            font-size: 12px;
-            opacity: 0.8;
-        }
-        
-        input[type="range"] {
-            width: 100%;
-            background: transparent;
-            -webkit-appearance: none;
-        }
-        
-        input[type="range"]::-webkit-slider-track {
+        <div id="status" class="bfiaahej:mt-2 bfiaahej:py-2 bfiaahej:px-3 bfiaahej:rounded bfiaahej:text-xs bfiaahej:text-center bfiaahej:hidden"></div>
+    </div>
+    
+    <!-- Custom Modal -->
+    <div id="customModal" class="bfiaahej:fixed bfiaahej:inset-0 bfiaahej:bg-black/50 bfiaahej:flex bfiaahej:items-center bfiaahej:justify-center bfiaahej:z-50 bfiaahej:hidden">
+        <div class="bfiaahej:bg-white bfiaahej:rounded-lg bfiaahej:p-6 bfiaahej:w-80 bfiaahej:max-w-sm bfiaahej:mx-4">
+            <div id="modalTitle" class="bfiaahej:text-lg bfiaahej:font-semibold bfiaahej:text-gray-800 bfiaahej:mb-3"></div>
+            <div id="modalMessage" class="bfiaahej:text-gray-600 bfiaahej:mb-4"></div>
+            <div id="modalInput" class="bfiaahej:mb-4 bfiaahej:hidden">
+                <input type="text" id="modalInputField" class="bfiaahej:w-full bfiaahej:py-2 bfiaahej:px-3 bfiaahej:border bfiaahej:border-gray-300 bfiaahej:rounded bfiaahej:text-sm bfiaahej:focus:outline-none bfiaahej:focus:ring-2 bfiaahej:focus:ring-blue-500">
+            </div>
+            <div id="modalButtons" class="bfiaahej:flex bfiaahej:justify-end bfiaahej:space-x-2">
+                <button id="modalCancel" class="bfiaahej:px-4 bfiaahej:py-2 bfiaahej:text-gray-600 bfiaahej:bg-gray-100 bfiaahej:rounded bfiaahej:text-sm bfiaahej:hover:bg-gray-200 bfiaahej:transition-colors">Cancel</button>
+                <button id="modalConfirm" class="bfiaahej:px-4 bfiaahej:py-2 bfiaahej:bg-blue-500 bfiaahej:text-white bfiaahej:rounded bfiaahej:text-sm bfiaahej:hover:bg-blue-600 bfiaahej:transition-colors">OK</button>
+            </div>
+        </div>
+    </div>
+    
+    <style>
+        .slider::-webkit-slider-track {
             background: rgba(255, 255, 255, 0.3);
             height: 4px;
             border-radius: 2px;
         }
         
-        input[type="range"]::-webkit-slider-thumb {
+        .slider::-webkit-slider-thumb {
             -webkit-appearance: none;
             background: white;
             height: 16px;
             width: 16px;
             border-radius: 50%;
             cursor: pointer;
-        }
-        
-        .hidden {
-            display: none;
-        }
-        
-        #status {
-            margin-top: 10px;
-            padding: 10px;
-            border-radius: 4px;
-            font-size: 12px;
-            text-align: center;
-            display: none;
-        }
-        
-        .success {
-            background-color: rgba(76, 175, 80, 0.3);
-            color: #4CAF50;
-        }
-        
-        .error {
-            background-color: rgba(244, 67, 54, 0.3);
-            color: #F44336;
-        }
-        
-        .search-section {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 15px;
-            backdrop-filter: blur(10px);
-        }
-        
-        .search-input {
-            width: 100%;
-            padding: 8px;
-            border: none;
-            border-radius: 4px;
-            font-size: 14px;
-            background: rgba(255, 255, 255, 0.9);
-            color: #333;
-            box-sizing: border-box;
-            margin-bottom: 10px;
-        }
-        
-        .search-results {
-            max-height: 150px;
-            overflow-y: auto;
         }
         
         .search-result-item {
@@ -315,123 +182,18 @@
             background: rgba(244, 67, 54, 1);
         }
         
-        .progress-section {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 15px;
-            backdrop-filter: blur(10px);
+        .success {
+            background-color: #10b981 !important;
+            color: white !important;
+            border: 1px solid #059669 !important;
         }
         
-        .progress-status {
-            font-size: 12px;
-            margin-bottom: 8px;
-            opacity: 0.9;
-            text-align: center;
-        }
-        
-        .progress-bar-container {
-            width: 100%;
-            height: 6px;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 3px;
-            overflow: hidden;
-        }
-        
-        .progress-bar-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #4CAF50, #66BB6A);
-            border-radius: 3px;
-            width: 0%;
-            transition: width 0.3s ease;
+        .error {
+            background-color: #ef4444 !important;
+            color: white !important;
+            border: 1px solid #dc2626 !important;
         }
     </style>
-</head>
-<body>
-    <div class="header">
-        <h1>Language Learning</h1>
-        <div class="subtitle">Learn while you browse</div>
-    </div>
-    
-    <div class="toggle-section">
-        <button id="toggleBtn" class="toggle-button disabled">Enable Learning</button>
-    </div>
-    
-    <div class="progress-section" id="progressSection" style="display: none;">
-        <div class="progress-status" id="progressStatus">Ready</div>
-        <div class="progress-bar-container">
-            <div class="progress-bar-fill" id="progressBarFill"></div>
-        </div>
-    </div>
-    
-    <div class="api-key-section">
-        <label for="apiKey">DeepL API Key</label>
-        <input type="password" id="apiKey" placeholder="Enter your DeepL API key" class="api-key-input">
-        <div id="apiKeyStatus" class="api-key-status invalid">API key required</div>
-    </div>
-    
-    <div class="search-section">
-        <label for="searchInput">Search & Correct Translations</label>
-        <input type="text" id="searchInput" placeholder="Search for a word or phrase..." class="search-input">
-        <div id="searchResults" class="search-results"></div>
-    </div>
-    
-    <div class="settings-section">
-        <div class="setting-group">
-            <label for="targetLanguage">Target Language</label>
-            <select id="targetLanguage">
-                <option value="fr">French</option>
-                <option value="es">Spanish</option>
-                <option value="de">German</option>
-                <option value="it">Italian</option>
-                <option value="pt">Portuguese</option>
-                <option value="ru">Russian</option>
-                <option value="ja">Japanese</option>
-                <option value="ko">Korean</option>
-                <option value="zh">Chinese</option>
-                <option value="nl">Dutch</option>
-                <option value="pl">Polish</option>
-            </select>
-        </div>
-        
-        <div class="setting-group">
-            <label for="difficulty">Difficulty Level</label>
-            <select id="difficulty">
-                <option value="beginner">Beginner</option>
-                <option value="intermediate">Intermediate</option>
-                <option value="advanced">Advanced</option>
-            </select>
-        </div>
-        
-        <div class="setting-group">
-            <label for="replacementPercentage">Word Replacement</label>
-            <div class="range-container">
-                <span class="range-value" id="percentageValue">10%</span>
-                <input type="range" id="replacementPercentage" min="1" max="30" value="10">
-            </div>
-        </div>
-    </div>
-    
-    <div class="stats-section">
-        <div class="stats-grid">
-            <div class="stat-item">
-                <div class="stat-value" id="wordsLearned">0</div>
-                <div class="stat-label">Words Learned</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-value" id="vocabularySize">0</div>
-                <div class="stat-label">Vocabulary</div>
-            </div>
-        </div>
-        
-        <div class="action-buttons">
-            <button class="action-button" id="clearCache">Clear Cache</button>
-            <button class="action-button" id="exportData">Export Data</button>
-            <button class="action-button" id="importData">Import Data</button>
-        </div>
-    </div>
-    
-    <div id="status"></div>
     
     <script src="popup.js"></script>
 </body>

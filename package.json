@@ -1,0 +1,29 @@
+{
+  "name": "firefox-language-learning-extension",
+  "version": "1.0.0",
+  "description": "A Firefox extension that helps you learn languages while browsing the web, similar to the discontinued Toucan extension. Uses DeepL's powerful translation API with intelligent caching to minimize API usage.",
+  "main": "background.js",
+  "scripts": {
+    "build-css": "tailwindcss -i ./src/popup.css -o ./popup.css --watch",
+    "build-css-prod": "tailwindcss -i ./src/popup.css -o ./popup.css --minify",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CADawg/firefox-language-learning-extension.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/CADawg/firefox-language-learning-extension/issues"
+  },
+  "homepage": "https://github.com/CADawg/firefox-language-learning-extension#readme",
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.1.11",
+    "@tailwindcss/forms": "^0.5.10",
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.11"
+  }
+}

@@ -10,6 +10,94 @@ class LanguageLearningPopup {
         this.init();
     }
 
+    // Custom Modal System
+    showModal(title, message, type = 'alert', defaultValue = '') {
+        return new Promise((resolve) => {
+            const modal = document.getElementById('customModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalMessage = document.getElementById('modalMessage');
+            const modalInput = document.getElementById('modalInput');
+            const modalInputField = document.getElementById('modalInputField');
+            // const modalButtons = document.getElementById('modalButtons');
+            const cancelBtn = document.getElementById('modalCancel');
+            const confirmBtn = document.getElementById('modalConfirm');
+            
+            // Setup modal content
+            modalTitle.textContent = title;
+            modalMessage.textContent = message;
+            
+            // Configure for different types
+            if (type === 'prompt') {
+                modalInput.classList.remove('ext-bce2400f-hidden');
+                modalInputField.value = defaultValue;
+                modalInputField.focus();
+                cancelBtn.style.display = 'block';
+            } else {
+                modalInput.classList.add('ext-bce2400f-hidden');
+                if (type === 'alert') {
+                    cancelBtn.style.display = 'none';
+                } else {
+                    cancelBtn.style.display = 'block';
+                }
+            }
+            
+            // Show modal
+            modal.classList.remove('ext-bce2400f-hidden');
+            
+            // Handle responses
+            const handleConfirm = () => {
+                const result = type === 'prompt' ? modalInputField.value : true;
+                cleanup();
+                resolve(result);
+            };
+            
+            const handleCancel = () => {
+                cleanup();
+                resolve(type === 'prompt' ? null : false);
+            };
+            
+            const cleanup = () => {
+                modal.classList.add('ext-bce2400f-hidden');
+                confirmBtn.removeEventListener('click', handleConfirm);
+                cancelBtn.removeEventListener('click', handleCancel);
+                modal.removeEventListener('click', handleBackdropClick);
+                document.removeEventListener('keydown', handleKeyDown);
+            };
+            
+            const handleBackdropClick = (e) => {
+                if (e.target === modal) {
+                    handleCancel();
+                }
+            };
+            
+            const handleKeyDown = (e) => {
+                if (e.key === 'Enter') {
+                    handleConfirm();
+                } else if (e.key === 'Escape') {
+                    handleCancel();
+                }
+            };
+            
+            // Add event listeners
+            confirmBtn.addEventListener('click', handleConfirm);
+            cancelBtn.addEventListener('click', handleCancel);
+            modal.addEventListener('click', handleBackdropClick);
+            document.addEventListener('keydown', handleKeyDown);
+        });
+    }
+    
+    customAlert(message, title = 'Notice') {
+        return this.showModal(title, message, 'alert');
+    }
+    
+    customConfirm(message, title = 'Confirm') {
+        return this.showModal(title, message, 'confirm');
+    }
+    
+    customPrompt(message, title = 'Input', defaultValue = '') {
+        return this.showModal(title, message, 'prompt', defaultValue);
+    }
+
     async init() {
         // Check if background script is running
         await this.checkBackgroundScript();
@@ -39,8 +127,7 @@ class LanguageLearningPopup {
             'languageLearningEnabled',
             'targetLanguage',
             'difficulty',
-            'replacementPercentage',
-            'deeplApiKey'
+            'replacementPercentage'
         ]);
         
         this.settings = {
@@ -49,14 +136,6 @@ class LanguageLearningPopup {
             difficulty: stored.difficulty || 'beginner',
             replacementPercentage: stored.replacementPercentage || 10
         };
-        
-        if (stored.deeplApiKey) {
-            document.getElementById('apiKey').value = stored.deeplApiKey;
-            // Give background script time to initialize before validating
-            setTimeout(() => {
-                this.validateApiKey(stored.deeplApiKey);
-            }, 500);
-        }
     }
 
     setupEventListeners() {
@@ -64,9 +143,6 @@ class LanguageLearningPopup {
             this.toggleLearning();
         });
 
-        document.getElementById('apiKey').addEventListener('input', (e) => {
-            this.handleApiKeyInput(e.target.value);
-        });
 
         document.getElementById('targetLanguage').addEventListener('change', (e) => {
             this.updateSetting('targetLanguage', e.target.value);
@@ -99,12 +175,6 @@ class LanguageLearningPopup {
     }
 
     async toggleLearning() {
-        const apiKey = document.getElementById('apiKey').value;
-        if (!apiKey && !this.settings.languageLearningEnabled) {
-            this.showStatus('Please enter your DeepL API key first', 'error');
-            return;
-        }
-
         this.settings.languageLearningEnabled = !this.settings.languageLearningEnabled;
         await this.saveSettings();
         
@@ -141,79 +211,6 @@ class LanguageLearningPopup {
         );
     }
 
-    async handleApiKeyInput(apiKey) {
-        if (apiKey.length > 10) {
-            try {
-                console.log('Setting API key...');
-                const response = await browser.runtime.sendMessage({
-                    action: 'setApiKey',
-                    apiKey: apiKey
-                });
-                
-                console.log('Set API key response:', response);
-                
-                if (response && response.success) {
-                    this.updateApiKeyStatus('API key set successfully', true);
-                    // Save API key to storage for persistence  
-                    await browser.storage.local.set({deeplApiKey: apiKey});
-                } else {
-                    // Log the full response for debugging
-                    console.log('Full response:', response);
-                    
-                    if (response === undefined) {
-                        this.updateApiKeyStatus('No response from background script', false);
-                    } else if (response.success === false) {
-                        const errorMsg = response.error || 'Background script returned failure';
-                        console.error('Failed to set API key:', errorMsg);
-                        this.updateApiKeyStatus(`Error: ${errorMsg}`, false);
-                    } else {
-                        // Response exists but doesn't have expected format
-                        this.updateApiKeyStatus('Unexpected response format', false);
-                        console.warn('Unexpected response format:', response);
-                    }
-                }
-            } catch (error) {
-                console.error('Error setting API key:', error);
-                if (error.message.includes('Receiving end does not exist')) {
-                    this.updateApiKeyStatus('Extension error: Please reload the extension', false);
-                    this.showStatus('Background script not running. Please reload the extension or restart Firefox.', 'error');
-                } else {
-                    this.updateApiKeyStatus(`Error: ${error.message}`, false);
-                }
-            }
-        } else {
-            this.updateApiKeyStatus('API key required', false);
-        }
-    }
-
-    async validateApiKey(apiKey) {
-        try {
-            // Test the API key by trying to get supported languages
-            const response = await browser.runtime.sendMessage({
-                action: 'validateApiKey',
-                apiKey: apiKey
-            });
-            
-            if (response && response.success) {
-                this.updateApiKeyStatus('Valid API key', true);
-            } else {
-                this.updateApiKeyStatus('Invalid API key', false);
-            }
-        } catch (error) {
-            console.error('Error validating API key:', error);
-            if (error.message.includes('Receiving end does not exist')) {
-                this.updateApiKeyStatus('Extension error: Please reload', false);
-            } else {
-                this.updateApiKeyStatus('Invalid API key', false);
-            }
-        }
-    }
-
-    updateApiKeyStatus(message, isValid) {
-        const statusEl = document.getElementById('apiKeyStatus');
-        statusEl.textContent = message;
-        statusEl.className = `api-key-status ${isValid ? 'valid' : 'invalid'}`;
-    }
 
     async updateSetting(key, value) {
         this.settings[key] = value;
@@ -284,7 +281,7 @@ class LanguageLearningPopup {
     }
 
     async clearCache() {
-        if (confirm('Clear translation cache and vocabulary data?')) {
+        if (await this.customConfirm('Clear translation cache and vocabulary data?', 'Clear Cache')) {
             try {
                 await browser.runtime.sendMessage({ action: 'clearCache' });
                 
@@ -301,7 +298,7 @@ class LanguageLearningPopup {
             const data = await browser.storage.local.get([
                 'vocabulary', 
                 'learnedWords', 
-                'translationCache',
+                'translationCache_v2',
                 'incorrectTranslations',
                 'languageLearningEnabled',
                 'targetLanguage',
@@ -317,7 +314,7 @@ class LanguageLearningPopup {
                 // User data
                 vocabulary: data.vocabulary || {},
                 learnedWords: data.learnedWords || [],
-                translationCache: data.translationCache || {},
+                translationCache: data.translationCache_v2 || {},
                 incorrectTranslations: data.incorrectTranslations || [],
                 
                 // Settings
@@ -332,7 +329,7 @@ class LanguageLearningPopup {
                 stats: {
                     vocabularySize: Object.keys(data.vocabulary || {}).length,
                     learnedWordsCount: (data.learnedWords || []).length,
-                    cacheSize: Object.keys(data.translationCache || {}).length,
+                    cacheSize: Object.keys(data.translationCache_v2 || {}).length,
                     incorrectCount: (data.incorrectTranslations || []).length
                 }
             };
@@ -376,14 +373,15 @@ class LanguageLearningPopup {
                     }
                     
                     // Show confirmation with import details
-                    const confirmed = confirm(
+                    const confirmed = await this.customConfirm(
                         `Import language learning data?\n\n` +
                         `Format Version: ${importData.formatVersion || 'Unknown'}\n` +
                         `Export Date: ${importData.exportDate || 'Unknown'}\n` +
                         `Vocabulary: ${Object.keys(importData.vocabulary || {}).length} words\n` +
                         `Learned Words: ${(importData.learnedWords || []).length} words\n` +
                         `Cache Entries: ${Object.keys(importData.translationCache || {}).length} entries\n\n` +
-                        `This will merge with your existing data.`
+                        `This will merge with your existing data.`,
+                        'Import Data'
                     );
                     
                     if (!confirmed) return;
@@ -419,7 +417,7 @@ class LanguageLearningPopup {
             const currentData = await browser.storage.local.get([
                 'vocabulary',
                 'learnedWords', 
-                'translationCache',
+                'translationCache_v2',
                 'incorrectTranslations'
             ]);
             
@@ -432,7 +430,7 @@ class LanguageLearningPopup {
             const mergedLearned = [...new Set([...currentLearned, ...importLearned])];
             
             // Merge translation cache (newer entries override)
-            const mergedCache = { ...currentData.translationCache, ...importData.translationCache };
+            const mergedCache = { ...currentData.translationCache_v2, ...importData.translationCache };
             
             // Merge incorrect translations
             const mergedIncorrect = [...(currentData.incorrectTranslations || []), ...(importData.incorrectTranslations || [])];
@@ -441,17 +439,18 @@ class LanguageLearningPopup {
             await browser.storage.local.set({
                 vocabulary: mergedVocabulary,
                 learnedWords: mergedLearned,
-                translationCache: mergedCache,
+                translationCache_v2: mergedCache,
                 incorrectTranslations: mergedIncorrect
             });
             
             // If import has settings, optionally import them
             if (importData.settings && importData.formatVersion === '2.0') {
-                const importSettings = confirm(
+                const importSettings = await this.customConfirm(
                     'Import settings as well?\n\n' +
                     `Target Language: ${importData.settings.targetLanguage}\n` +
                     `Difficulty: ${importData.settings.difficulty}\n` +
-                    `Replacement %: ${importData.settings.replacementPercentage}%`
+                    `Replacement %: ${importData.settings.replacementPercentage}%`,
+                    'Import Settings'
                 );
                 
                 if (importSettings) {
@@ -544,7 +543,7 @@ class LanguageLearningPopup {
         const resultsContainer = document.getElementById('searchResults');
         
         if (!query || query.length < 2) {
-            resultsContainer.innerHTML = '';
+            resultsContainer.textContent = '';
             return;
         }
         
@@ -554,7 +553,11 @@ class LanguageLearningPopup {
             const stored = await browser.storage.local.get(['vocabulary']);
             
             if (!stored.vocabulary) {
-                resultsContainer.innerHTML = '<div class="search-result-item">No translations found</div>';
+                resultsContainer.textContent = '';
+                const noResultsDiv = document.createElement('div');
+                noResultsDiv.className = 'search-result-item';
+                noResultsDiv.textContent = 'No translations found';
+                resultsContainer.appendChild(noResultsDiv);
                 return;
             }
             
@@ -567,20 +570,56 @@ class LanguageLearningPopup {
                 .slice(0, 5); // Limit to 5 results
             
             if (matches.length === 0) {
-                resultsContainer.innerHTML = '<div class="search-result-item">No matches found</div>';
+                resultsContainer.textContent = '';
+                const noMatchesDiv = document.createElement('div');
+                noMatchesDiv.className = 'search-result-item';
+                noMatchesDiv.textContent = 'No matches found';
+                resultsContainer.appendChild(noMatchesDiv);
                 return;
             }
             
-            resultsContainer.innerHTML = matches.map(([key, data]) => `
-                <div class="search-result-item">
-                    <div class="search-result-word">${data.original}</div>
-                    <div class="search-result-translation">${data.translation}</div>
-                    <div class="search-result-actions">
-                        <button class="search-result-btn edit-btn" data-word="${data.original}" data-translation="${data.translation}">Edit</button>
-                        <button class="search-result-btn remove-btn" data-word="${data.original}">Remove</button>
-                    </div>
-                </div>
-            `).join('');
+            // Clear results container
+            resultsContainer.textContent = '';
+            
+            // Create search result items safely
+            matches.forEach(([key, data]) => {
+                const resultItem = document.createElement('div');
+                resultItem.className = 'search-result-item';
+                
+                // Create word element
+                const wordDiv = document.createElement('div');
+                wordDiv.className = 'search-result-word';
+                wordDiv.textContent = data.original;
+                resultItem.appendChild(wordDiv);
+                
+                // Create translation element
+                const translationDiv = document.createElement('div');
+                translationDiv.className = 'search-result-translation';
+                translationDiv.textContent = data.translation;
+                resultItem.appendChild(translationDiv);
+                
+                // Create actions container
+                const actionsDiv = document.createElement('div');
+                actionsDiv.className = 'search-result-actions';
+                
+                // Create edit button
+                const editBtn = document.createElement('button');
+                editBtn.className = 'search-result-btn edit-btn';
+                editBtn.textContent = 'Edit';
+                editBtn.setAttribute('data-word', data.original);
+                editBtn.setAttribute('data-translation', data.translation);
+                actionsDiv.appendChild(editBtn);
+                
+                // Create remove button
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'search-result-btn remove-btn';
+                removeBtn.textContent = 'Remove';
+                removeBtn.setAttribute('data-word', data.original);
+                actionsDiv.appendChild(removeBtn);
+                
+                resultItem.appendChild(actionsDiv);
+                resultsContainer.appendChild(resultItem);
+            });
             
             // Add event listeners to buttons
             resultsContainer.querySelectorAll('.edit-btn').forEach(btn => {
@@ -597,12 +636,16 @@ class LanguageLearningPopup {
             
         } catch (error) {
             console.error('Error searching translations:', error);
-            resultsContainer.innerHTML = '<div class="search-result-item">Error searching translations</div>';
+            resultsContainer.textContent = '';
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'search-result-item';
+            errorDiv.textContent = 'Error searching translations';
+            resultsContainer.appendChild(errorDiv);
         }
     }
     
-    editTranslation(word, currentTranslation) {
-        const newTranslation = prompt(`Edit translation for "${word}":`, currentTranslation);
+    async editTranslation(word, currentTranslation) {
+        const newTranslation = await this.customPrompt(`Edit translation for "${word}":`, 'Edit Translation', currentTranslation);
         if (newTranslation && newTranslation !== currentTranslation) {
             this.updateTranslation(word, newTranslation);
         }
@@ -619,15 +662,7 @@ class LanguageLearningPopup {
                 vocabulary[key].translation = newTranslation;
                 await browser.storage.local.set({ vocabulary });
                 
-                // Also update the translation cache
-                const cacheKey = `${word.toLowerCase().trim()}|auto|${this.settings.targetLanguage}`;
-                const cacheStored = await browser.storage.local.get(['translationCache']);
-                const cache = cacheStored.translationCache || {};
-                
-                if (cache[cacheKey]) {
-                    cache[cacheKey].text = newTranslation;
-                    await browser.storage.local.set({ translationCache: cache });
-                }
+                // Cache will be updated by background script on next request
                 
                 this.showStatus('Translation updated successfully', 'success');
                 
@@ -644,7 +679,7 @@ class LanguageLearningPopup {
     }
     
     async removeTranslation(word) {
-        if (!confirm(`Remove translation for "${word}"?`)) return;
+        if (!(await this.customConfirm(`Remove translation for "${word}"?`, 'Remove Translation'))) return;
         
         try {
             // Remove from vocabulary
@@ -655,13 +690,7 @@ class LanguageLearningPopup {
             delete vocabulary[key];
             await browser.storage.local.set({ vocabulary });
             
-            // Remove from translation cache
-            const cacheKey = `${word.toLowerCase().trim()}|auto|${this.settings.targetLanguage}`;
-            const cacheStored = await browser.storage.local.get(['translationCache']);
-            const cache = cacheStored.translationCache || {};
-            
-            delete cache[cacheKey];
-            await browser.storage.local.set({ translationCache: cache });
+            // Cache will be handled by background script
             
             this.showStatus('Translation removed successfully', 'success');
             

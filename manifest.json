@@ -1,34 +1,33 @@
 {
   "manifest_version": 2,
-  "name": "Language Learning Assistant",
-  "version": "2.0.2",
-  "description": "Learn languages while browsing with DeepL-powered translations. A modern alternative to Toucan for Firefox.",
+  "name": "Fluent Tab",
+  "version": "1.0.0",
+  "description": "Learn languages while browsing with DeepL-powered translations. Transform any webpage into a language learning experience.",
   
   "applications": {
     "gecko": {
-      "id": "firefox-language-learning@cadawg.com",
-      "strict_min_version": "58.0",
-      "update_url": "https://cadawg.github.io/firefox-language-learning-extension/updates.json"
+      "id": "fluent-tab@dbuidl.com",
+      "strict_min_version": "58.0"
     }
   },
   
   "permissions": [
     "activeTab",
     "storage",
-    "https://api-free.deepl.com/*",
-    "https://api.deepl.com/*",
+    "http://localhost:8090/*",
+    "https://fluent-tab.dbuidl.com/*",
     "<all_urls>"
   ],
   
   "background": {
-    "scripts": ["deepl-service.js", "background.js"],
+    "scripts": ["server-api.js", "background.js"],
     "persistent": true
   },
   
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["deepl-service.js", "content.js"],
+      "js": ["english-dictionary.js", "content.js"],
       "css": ["content.css"],
       "run_at": "document_end"
     }
@@ -36,7 +35,7 @@
   
   "browser_action": {
     "default_popup": "popup.html",
-    "default_title": "Language Learning Assistant",
+    "default_title": "Fluent Tab",
     "default_icon": {
       "16": "icons/icon-16.png",
       "32": "icons/icon-32.png",
