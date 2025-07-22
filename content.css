@@ -1,18 +1,18 @@
 .language-learning-word {
     background: rgba(70, 130, 180, 0.3);
-    color: white;
+    color: inherit;
     padding: 2px 4px;
     border-radius: 3px;
     cursor: pointer;
-    font-weight: 500;
     transition: all 0.3s ease;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     position: relative;
     text-decoration: none;
+    font-weight: inherit;
 }
 
 .language-learning-word:hover {
-    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+    background: rgba(70, 130, 180, 0.6);
     transform: translateY(-1px);
     box-shadow: 0 4px 8px rgba(0,0,0,0.15);
 }
