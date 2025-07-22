@@ -523,12 +523,6 @@ class LanguageLearningContent {
         translationDiv.textContent = translation;
         this.tooltip.appendChild(translationDiv);
         
-        // Create difficulty element
-        const difficultyDiv = document.createElement('div');
-        difficultyDiv.className = 'difficulty';
-        difficultyDiv.textContent = `Difficulty: ${this.difficulty.charAt(0).toUpperCase() + this.difficulty.slice(1)}`;
-        this.tooltip.appendChild(difficultyDiv);
-        
         // Create actions container
         const actionsDiv = document.createElement('div');
         actionsDiv.className = 'tooltip-actions';
@@ -781,10 +775,10 @@ class LanguageLearningContent {
             options.forEach((option, index) => {
                 const btn = document.createElement('button');
                 btn.textContent = option;
-                btn.className = `fluent-modal-px-3 fluent-modal-py-2 fluent-modal-text-sm fluent-modal-rounded fluent-modal-transition-colors fluent-modal-mr-2 ${
-                    index === 0 ? 'fluent-modal-bg-gray-100 fluent-modal-text-gray-600 fluent-modal-hover:bg-gray-200' :
-                    index === 1 ? 'fluent-modal-bg-red-500 fluent-modal-text-white fluent-modal-hover:bg-red-600' :
-                    'fluent-modal-bg-blue-500 fluent-modal-text-white fluent-modal-hover:bg-blue-600'
+                btn.className = `fluent-modal-button fluent-modal-px-3 fluent-modal-py-2 fluent-modal-text-sm fluent-modal-rounded fluent-modal-transition-colors fluent-modal-mr-2 ${
+                    index === 0 ? 'fluent-modal-button fluent-modal-bg-gray-100 fluent-modal-text-gray-600 fluent-modal-hover:bg-gray-200' :
+                    index === 1 ? 'fluent-modal-button fluent-modal-bg-red-500 fluent-modal-text-white fluent-modal-hover:bg-red-600' :
+                    'fluent-modal-button fluent-modal-bg-blue-500 fluent-modal-text-white fluent-modal-hover:bg-blue-600'
                 }`;
                 
                 btn.addEventListener('click', () => {

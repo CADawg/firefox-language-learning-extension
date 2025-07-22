@@ -111,6 +111,11 @@
     height: auto;
 }
 
+.fluent-modal-button {
+    text-overflow: unset;
+    height: auto;
+}
+
 .learned-btn {
     background: rgba(76, 175, 80, 0.8);
     color: white;
@@ -238,11 +243,11 @@
 }
 
 .fluent-modal-w-80 {
-    width: 20rem;
+    width: 50rem;
 }
 
 .fluent-modal-max-w-sm {
-    max-width: 24rem;
+    max-width: 95vw;
 }
 
 .fluent-modal-mx-4 {
