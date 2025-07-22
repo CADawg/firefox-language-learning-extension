@@ -107,6 +107,8 @@
     cursor: pointer;
     transition: all 0.2s ease;
     font-family: inherit;
+    text-overflow: unset;
+    height: auto;
 }
 
 .learned-btn {
