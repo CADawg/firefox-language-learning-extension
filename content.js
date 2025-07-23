@@ -569,7 +569,7 @@ class LanguageLearningContent {
         // Add extension icon next to incorrect button
         const extensionIcon = document.createElement('img');
         extensionIcon.src = browser.runtime.getURL('icons/icon-128.png');
-        extensionIcon.className = 'extension-icon';
+        extensionIcon.className = 'fluent-extension-icon';
         extensionIcon.style.width = '22px';
         extensionIcon.style.height = '22px';
         extensionIcon.style.alignSelf = 'center';

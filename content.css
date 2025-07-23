@@ -115,6 +115,7 @@
     text-overflow: unset;
     height: auto;
     flex-grow: 0;
+    overflow: visible;
 }
 
 .fluent-modal-button {
@@ -179,10 +180,11 @@
     text-wrap: nowrap;
 }
 
-.extension-icon {
+.fluent-extension-icon {
     display: inline-block;
     vertical-align: middle;
     border-radius: 2px;
+    padding-bottom: 0;
 }
 
 .tooltip-hint {
