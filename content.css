@@ -9,6 +9,7 @@
     position: relative;
     text-decoration: none;
     font-weight: inherit;
+    overflow: visible;
 }
 
 .language-learning-word:hover {
@@ -27,7 +28,8 @@
     font-size: 14px;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-    max-width: 320px;
+    width: 100%;
+    max-width: 250px;
     line-height: 1.4;
     backdrop-filter: blur(10px);
     opacity: 0;
@@ -73,7 +75,7 @@
 
 .language-learning-tooltip .original-text {
     font-weight: 600;
-    color: #4CAF50;
+    color: #FFFFFF;
     margin-bottom: 4px;
 }
 
@@ -92,14 +94,17 @@
 }
 
 .tooltip-actions {
-    display: flex;
     gap: 8px;
-    margin-top: 8px;
+    display: flex;
+    justify-content: space-between;
+    border-top: 1px solid gray;
+    margin-top: 5px;
+    padding-top: 5px;
 }
 
 .tooltip-btn {
     flex: 1;
-    padding: 6px 10px;
+    padding: 5px;
     border: none;
     border-radius: 4px;
     font-size: 12px;
@@ -109,31 +114,75 @@
     font-family: inherit;
     text-overflow: unset;
     height: auto;
+    flex-grow: 0;
 }
 
 .fluent-modal-button {
     text-overflow: unset;
     height: auto;
+    border: none;
 }
 
-.learned-btn {
+.language-learning-tooltip-top {
+    display: block;
+    text-align: right;
+}
+
+.tooltip-btn.learned-btn {
     background: rgba(76, 175, 80, 0.8);
+    margin-left: auto;
     color: white;
+    border-radius: 50px;
+    padding: 5px 5px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
-.learned-btn:hover {
+.tooltip-btn.learned-btn::after {
+    content: '';
+}
+
+.tooltip-btn.learned-btn:hover::after {
+    content: "Mark as Learned";
+    overflow: hidden;
+    margin-left: 2px;
+    text-wrap: nowrap;
+}
+
+.tooltip-btn.learned-btn:hover {
     background: rgba(76, 175, 80, 1);
     transform: translateY(-1px);
 }
 
-.incorrect-btn {
+.tooltip-btn.incorrect-btn {
     background: rgba(244, 67, 54, 0.8);
     color: white;
+    border-radius: 50px;
+    padding: 5px 5px;
+    display: flex;
+    flex-direction: row;
+    width: auto;
+    justify-content: center;
+    align-items: center;
 }
 
-.incorrect-btn:hover {
+.tooltip-btn.incorrect-btn:hover {
     background: rgba(244, 67, 54, 1);
     transform: translateY(-1px);
+}
+
+.tooltip-btn.incorrect-btn:hover::after {
+    content: "Mark as Incorrect";
+    overflow: hidden;
+    margin-left: 2px;
+    text-wrap: nowrap;
+}
+
+.extension-icon {
+    display: inline-block;
+    vertical-align: middle;
+    border-radius: 2px;
 }
 
 .tooltip-hint {
