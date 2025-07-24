@@ -48,7 +48,7 @@ class LanguageLearningContent {
         const cancelBtn = document.createElement('button');
         cancelBtn.id = 'fluent-tab-modal-cancel';
         cancelBtn.textContent = 'Cancel';
-        cancelBtn.className = 'fluent-modal-px-4 fluent-modal-py-2 fluent-modal-text-gray-600 fluent-modal-bg-gray-100 fluent-modal-rounded fluent-modal-text-sm fluent-modal-hover:bg-gray-200 fluent-modal-transition-colors';
+        cancelBtn.className = 'fluent-modal-button fluent-modal-px-3 fluent-modal-py-2 fluent-modal-text-sm fluent-modal-rounded fluent-modal-transition-colors fluent-modal-mr-2 fluent-modal-button fluent-modal-bg-gray-100 fluent-modal-text-gray-600 fluent-modal-hover:bg-gray-200';
         
         const confirmBtn = document.createElement('button');
         confirmBtn.id = 'fluent-tab-modal-confirm';
@@ -85,14 +85,14 @@ class LanguageLearningContent {
             if (type === 'prompt') {
                 modalInput.classList.remove('fluent-modal-hidden');
                 inputField.value = defaultValue;
-                cancelBtn.classList.remove('fluent-modal-hidden');
+                if (cancelBtn) cancelBtn.classList.remove('fluent-modal-hidden');
                 setTimeout(() => inputField.focus(), 100);
             } else {
                 modalInput.classList.add('fluent-modal-hidden');
                 if (type === 'alert') {
-                    cancelBtn.classList.add('fluent-modal-hidden');
+                    if (cancelBtn) cancelBtn.classList.add('fluent-modal-hidden');
                 } else {
-                    cancelBtn.classList.remove('fluent-modal-hidden');
+                    if (cancelBtn) cancelBtn.classList.remove('fluent-modal-hidden');
                 }
             }
             
@@ -111,8 +111,8 @@ class LanguageLearningContent {
             
             const cleanup = () => {
                 modal.classList.add('fluent-modal-hidden');
-                confirmBtn.removeEventListener('click', handleConfirm);
-                cancelBtn.removeEventListener('click', handleCancel);
+                if (confirmBtn) confirmBtn.removeEventListener('click', handleConfirm);
+                if (cancelBtn) cancelBtn.removeEventListener('click', handleCancel);
                 modal.removeEventListener('click', handleBackdropClick);
                 document.removeEventListener('keydown', handleKeyDown);
             };
@@ -132,7 +132,7 @@ class LanguageLearningContent {
             };
             
             confirmBtn.addEventListener('click', handleConfirm);
-            cancelBtn.addEventListener('click', handleCancel);
+            if (cancelBtn) cancelBtn.addEventListener('click', handleCancel);
             modal.addEventListener('click', handleBackdropClick);
             document.addEventListener('keydown', handleKeyDown);
         });
@@ -844,6 +844,27 @@ class LanguageLearningContent {
                 modal.classList.add('fluent-modal-hidden');
                 modal.removeEventListener('click', handleBackdropClick);
                 document.removeEventListener('keydown', handleKeyDown);
+                
+                // Restore original button structure for future use
+                modalButtons.textContent = '';
+                
+                // Ensure the button container has the correct classes for spacing
+                modalButtons.className = 'fluent-modal-flex fluent-modal-justify-end fluent-modal-space-x-2';
+                
+                // Recreate cancel button with exact same styling as original
+                const cancelBtn = document.createElement('button');
+                cancelBtn.id = 'fluent-tab-modal-cancel';
+                cancelBtn.textContent = 'Cancel';
+                cancelBtn.className = 'fluent-modal-button fluent-modal-px-3 fluent-modal-py-2 fluent-modal-text-sm fluent-modal-rounded fluent-modal-transition-colors fluent-modal-mr-2 fluent-modal-button fluent-modal-bg-gray-100 fluent-modal-text-gray-600 fluent-modal-hover:bg-gray-200';
+                
+                // Recreate confirm button with exact same styling as original
+                const confirmBtn = document.createElement('button');
+                confirmBtn.id = 'fluent-tab-modal-confirm';
+                confirmBtn.textContent = 'OK';
+                confirmBtn.className = 'fluent-modal-button fluent-modal-px-3 fluent-modal-py-2 fluent-modal-text-sm fluent-modal-rounded fluent-modal-transition-colors fluent-modal-mr-2 fluent-modal-button fluent-modal-bg-blue-500 fluent-modal-text-white fluent-modal-hover:bg-blue-600';
+                
+                modalButtons.appendChild(cancelBtn);
+                modalButtons.appendChild(confirmBtn);
             };
             
             const handleBackdropClick = (e) => {
