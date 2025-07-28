@@ -137,15 +137,7 @@ class LanguageLearningContent {
             document.addEventListener('keydown', handleKeyDown);
         });
     }
-    
-    customAlert(message, title = 'Notice') {
-        return this.showModal(title, message, 'alert');
-    }
-    
-    customConfirm(message, title = 'Confirm') {
-        return this.showModal(title, message, 'confirm');
-    }
-    
+
     customPrompt(message, title = 'Input', defaultValue = '') {
         return this.showModal(title, message, 'prompt', defaultValue);
     }

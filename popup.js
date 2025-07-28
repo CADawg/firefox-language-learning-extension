@@ -86,10 +86,6 @@ class LanguageLearningPopup {
         });
     }
     
-    customAlert(message, title = 'Notice') {
-        return this.showModal(title, message, 'alert');
-    }
-    
     customConfirm(message, title = 'Confirm') {
         return this.showModal(title, message, 'confirm');
     }
@@ -486,7 +482,7 @@ class LanguageLearningPopup {
 
     setupProgressListener() {
         // Listen for progress updates from background script
-        browser.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
+        browser.runtime.onMessage.addListener(async (request) => {
             if (request.action === 'progressUpdate') {
                 // Only show progress from the currently active tab
                 const [activeTab] = await browser.tabs.query({ active: true, currentWindow: true });
@@ -549,7 +545,6 @@ class LanguageLearningPopup {
         
         try {
             // Get vocabulary from background
-            const stats = await browser.runtime.sendMessage({ action: 'getStats' });
             const stored = await browser.storage.local.get(['vocabulary']);
             
             if (!stored.vocabulary) {
@@ -563,7 +558,7 @@ class LanguageLearningPopup {
             
             const vocabulary = stored.vocabulary;
             const matches = Object.entries(vocabulary)
-                .filter(([key, data]) => 
+                .filter(([, data]) =>
                     data.original.toLowerCase().includes(query.toLowerCase()) ||
                     data.translation.toLowerCase().includes(query.toLowerCase())
                 )
@@ -582,7 +577,7 @@ class LanguageLearningPopup {
             resultsContainer.textContent = '';
             
             // Create search result items safely
-            matches.forEach(([key, data]) => {
+            matches.forEach(([, data]) => {
                 const resultItem = document.createElement('div');
                 resultItem.className = 'search-result-item';
                 
@@ -623,13 +618,13 @@ class LanguageLearningPopup {
             
             // Add event listeners to buttons
             resultsContainer.querySelectorAll('.edit-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
+                btn.addEventListener('click', () => {
                     this.editTranslation(btn.dataset.word, btn.dataset.translation);
                 });
             });
             
             resultsContainer.querySelectorAll('.remove-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
+                btn.addEventListener('click', () => {
                     this.removeTranslation(btn.dataset.word);
                 });
             });

@@ -179,43 +179,6 @@ class ServerAPI {
         }
     }
 
-    async submitAnalytics(sessionData) {
-        if (!this.isRegistered) {
-            console.log('Not registered with server, skipping analytics submission');
-            return false;
-        }
-
-        try {
-            const response = await fetch(`${this.baseURL}/api/extension/analytics`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    user_uuid: this.userID,
-                    session_id: sessionData.sessionId,
-                    words_encountered: sessionData.wordsEncountered,
-                    words_learned: sessionData.wordsLearned,
-                    session_duration: sessionData.sessionDuration,
-                    target_language: sessionData.targetLanguage,
-                    difficulty_level: sessionData.difficultyLevel,
-                    replacement_percentage: sessionData.replacementPercentage
-                })
-            });
-
-            if (response.ok) {
-                console.log('Analytics submitted successfully');
-                return true;
-            } else {
-                console.error('Analytics submission failed:', response.status);
-                return false;
-            }
-        } catch (error) {
-            console.error('Server analytics error:', error);
-            return false;
-        }
-    }
-
     // Check if server is available
     async isServerAvailable() {
         try {
@@ -227,18 +190,5 @@ class ServerAPI {
         } catch (error) {
             return false;
         }
-    }
-
-    // Get server configuration/status
-    async getServerStats() {
-        try {
-            const response = await fetch(`${this.baseURL}/api/stats`);
-            if (response.ok) {
-                return await response.json();
-            }
-        } catch (error) {
-            console.error('Failed to get server stats:', error);
-        }
-        return null;
     }
 }

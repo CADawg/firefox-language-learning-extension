@@ -568,43 +568,6 @@ class TranslationCache {
             console.error('Error cleaning up translation cache:', error);
         }
     }
-
-    // Get cache statistics
-    async getCacheStats() {
-        try {
-            const stored = await browser.storage.local.get(this.CACHE_KEY);
-            const cache = stored[this.CACHE_KEY] || {};
-            
-            const now = Date.now();
-            const expiryThreshold = this.CACHE_EXPIRY_DAYS * 24 * 60 * 60 * 1000;
-            
-            let totalEntries = 0;
-            let expiredEntries = 0;
-            
-            for (const entry of Object.values(cache)) {
-                totalEntries++;
-                if (now - entry.timestamp > expiryThreshold) {
-                    expiredEntries++;
-                }
-            }
-            
-            return {
-                totalEntries,
-                activeEntries: totalEntries - expiredEntries,
-                expiredEntries,
-                cacheExpiryDays: this.CACHE_EXPIRY_DAYS
-            };
-            
-        } catch (error) {
-            console.error('Error getting cache stats:', error);
-            return {
-                totalEntries: 0,
-                activeEntries: 0,
-                expiredEntries: 0,
-                cacheExpiryDays: this.CACHE_EXPIRY_DAYS
-            };
-        }
-    }
 }
 
 // Initialize background script
