@@ -307,14 +307,14 @@ class LanguageLearningContent {
             }
             
             // Always include single words (including contractions)
-            const words = text.match(/\b[a-zA-Z]+(?:'[a-zA-Z]+)?\b/g) || [];
-            
-            for (const word of words) {
+            // Find all word matches with their positions
+            let match;
+            const wordRegex = /\b[a-zA-Z]+(?:'[a-zA-Z]+)?\b/g;
+            while ((match = wordRegex.exec(text)) !== null) {
+                const word = match[0];
                 if (await this.shouldReplaceWord(word)) {
-                    const index = text.indexOf(word);
-                    if (index !== -1) {
-                        wordsToProcess.push({ node, word, index });
-                    }
+                    const index = match.index;
+                    wordsToProcess.push({ node, word, index });
                 }
             }
         }
